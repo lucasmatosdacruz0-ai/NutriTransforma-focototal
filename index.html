@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NutriBot Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'brand-green': {
+                light: '#E6F8F0',
+                DEFAULT: '#00B894',
+                dark: '#00896B',
+              },
+              'brand-blue': {
+                light: '#EBF5FF',
+                DEFAULT: '#3498DB',
+                dark: '#2980B9',
+              },
+              'brand-orange': {
+                light: '#FFF4E6',
+                DEFAULT: '#F39C12',
+              },
+               'brand-yellow': {
+                light: '#FEF9E7',
+                DEFAULT: '#F1C40F',
+              }
+            }
+          }
+        },
+        // This allows us to target the theme class with variants
+        variants: {
+          extend: {},
+        },
+        plugins: [
+            function({ addVariant }) {
+                addVariant('theme-athlete', '.theme-athlete &');
+            }
+        ],
+      }
+    </script>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden; /* Added to prevent duplicate scrollbars */
+      }
+      #root {
+        height: 100%;
+      }
+      /* === ATHLETE MODE THEME === */
+      .theme-athlete {
+        --bg-primary: #0F1115;
+        --bg-sidebar: #161A20;
+        --bg-card: #2C333E;
+        --bg-card-alt: #374151; /* for progress bar tracks and other elements */
+        --border-color: #4B5563;
+        --text-primary: #EAEAEA;
+        --text-secondary: #A0AEC0;
+        --accent-red: #EF4444;
+        --accent-orange: #F97316;
+        --accent-blue: #3B82F6;
+        --accent-yellow: #FBBF24;
+        --active-sidebar-bg: rgba(239, 68, 68, 0.15); /* Red with opacity */
+      }
+      .theme-athlete {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+      }
+      .theme-athlete aside {
+        background-color: var(--bg-sidebar) !important;
+        border-color: var(--bg-sidebar) !important;
+      }
+      
+      /* --- THEME OVERRIDE FIXES --- */
+      .theme-athlete.bg-slate-50, .theme-athlete.bg-slate-100 { background-color: var(--bg-primary); }
+      .theme-athlete .bg-white, .theme-athlete .bg-white\/80 { background-color: var(--bg-card) !important; }
+      
+      .theme-athlete .hover\:bg-gray-100:hover, 
+      .theme-athlete .bg-gray-50, 
+      .theme-athlete .bg-gray-100, 
+      .theme-athlete .bg-gray-200, 
+      .theme-athlete .bg-slate-50, 
+      .theme-athlete .bg-slate-100, 
+      .theme-athlete .bg-slate-200 { 
+          background-color: var(--bg-card-alt) !important; 
+      }
+      /* --- END THEME OVERRIDE FIXES --- */
+
+      .theme-athlete .text-slate-900, .theme-athlete .text-slate-800 { color: var(--text-primary); }
+      .theme-athlete .text-slate-700, .theme-athlete .text-slate-600 { color: #CBD5E0; }
+      .theme-athlete .text-slate-500, .theme-athlete .text-slate-400 { color: var(--text-secondary); }
+
+      .theme-athlete .border-gray-100, .theme-athlete .border-gray-200, .theme-athlete .border-gray-300 { border-color: var(--border-color); }
+
+      .theme-athlete .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4); }
+      .theme-athlete .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.4); }
+
+      /* Component-specific overrides */
+      .theme-athlete .bg-brand-green { background-color: var(--accent-red); }
+      .theme-athlete .hover\:bg-brand-green-dark:hover { background-color: #DC2626; } /* red-600 */
+      .theme-athlete .bg-brand-green-light { background-color: var(--active-sidebar-bg); }
+      .theme-athlete .text-brand-green { color: var(--accent-red); }
+      .theme-athlete .text-brand-green-dark { color: var(--accent-red); }
+      .theme-athlete .border-brand-green { border-color: var(--accent-red); }
+      
+      /* Inactive tab button in Dieta view */
+      .theme-athlete .bg-brand-green-light > button.bg-white {
+          background-color: transparent !important;
+          color: var(--text-secondary) !important;
+      }
+      .theme-athlete .bg-brand-green-light > button.bg-white:hover {
+          background-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+
+      .theme-athlete .bg-brand-blue-light { background-color: rgba(59, 130, 246, 0.2); }
+      .theme-athlete .text-brand-blue { color: var(--accent-blue); }
+      .theme-athlete .border-brand-blue { border-color: var(--accent-blue); }
+      .theme-athlete .bg-brand-blue { background-color: var(--accent-blue); }
+      .theme-athlete .bg-brand-blue-dark { background-color: #2563eb; } /* blue-600 */
+      .theme-athlete .text-brand-blue-dark { color: #93c5fd; } /* blue-300 */
+      .theme-athlete .border-brand-blue-dark { border-color: var(--accent-blue); }
+      
+      .theme-athlete .bg-blue-100 { background-color: rgba(96, 165, 250, 0.15); } /* blue-400 opacity */
+      .theme-athlete .text-blue-700 { color: #60a5fa; } /* blue-400 */
+      .theme-athlete .text-blue-800 { color: #93c5fd; } /* blue-300 */
+      .theme-athlete .border-blue-200 { border-color: var(--accent-blue); } 
+      .theme-athlete .bg-blue-500, .theme-athlete .bg-sky-500 { background-color: var(--accent-blue); }
+      .theme-athlete .hover\:bg-blue-600:hover { background-color: #1d4ed8; } /* blue-700 */
+      .theme-athlete .bg-blue-600 { background-color: #1d4ed8; } /* blue-700 */
+
+      .theme-athlete .text-brand-orange { color: var(--accent-orange); }
+      .theme-athlete .bg-brand-orange, .theme-athlete .bg-amber-500 { background-color: var(--accent-orange); }
+      .theme-athlete .bg-brand-orange-light, .theme-athlete .bg-orange-100 { background-color: rgba(249, 115, 22, 0.15); }
+      .theme-athlete .text-orange-500 { color: #fb923c; }
+
+      .theme-athlete .bg-purple-600 { background-color: var(--accent-red); }
+      .theme-athlete .hover\:bg-purple-700:hover { background-color: #DC2626; }
+      .theme-athlete .text-purple-600 { color: var(--accent-red); }
+      .theme-athlete .bg-purple-100 { background-color: rgba(239, 68, 68, 0.15); }
+      
+      .theme-athlete .bg-teal-500 { background-color: var(--accent-red); }
+      .theme-athlete .hover\:bg-teal-600:hover { background-color: #C53030; }
+      
+      .theme-athlete .bg-emerald-500 { background-color: var(--accent-red); }
+
+
+      /* === CHAT BUBBLE STYLES === */
+        .chat-bubble {
+            position: relative;
+            padding: 0.75rem 1rem;
+            border-radius: 1.25rem;
+            max-width: 80%;
+        }
+        .chat-bubble.user {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+        }
+        .chat-bubble.bot {
+            background-color: #f1f5f9; /* slate-100 */
+            color: #1e293b; /* slate-800 */
+            border-bottom-left-radius: 0.25rem;
+        }
+        .theme-athlete .chat-bubble.bot {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .theme-athlete .chat-bubble.user {
+            background-color: #2563eb; /* blue-600 */
+            color: var(--text-primary);
+        }
+        .chat-bubble.thinking .dot-flashing {
+            position: relative;
+            width: 6px;
+            height: 6px;
+            border-radius: 5px;
+            background-color: #94a3b8;
+            color: #94a3b8;
+            animation: dot-flashing 1s infinite linear alternate;
+            animation-delay: .5s;
+        }
+        .chat-bubble.thinking .dot-flashing::before, .chat-bubble.thinking .dot-flashing::after {
+            content: '';
+            display: inline-block;
+            position: absolute;
+            top: 0;
+        }
+        .chat-bubble.thinking .dot-flashing::before {
+            left: -10px;
+            width: 6px;
+            height: 6px;
+            border-radius: 5px;
+            background-color: #94a3b8;
+            color: #94a3b8;
+            animation: dot-flashing 1s infinite alternate;
+            animation-delay: 0s;
+        }
+        .chat-bubble.thinking .dot-flashing::after {
+            left: 10px;
+            width: 6px;
+            height: 6px;
+            border-radius: 5px;
+            background-color: #94a3b8;
+            color: #94a3b8;
+            animation: dot-flashing 1s infinite alternate;
+            animation-delay: 1s;
+        }
+
+        @keyframes dot-flashing {
+            0% { background-color: #94a3b8; }
+            50%, 100% { background-color: rgba(148, 163, 184, 0.2); }
+        }
+      /* === END CHAT BUBBLE STYLES === */
+      
+      /* === CHAT SCROLLBAR === */
+        .chat-messages-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-messages-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-messages-container::-webkit-scrollbar-thumb {
+            background-color: #d1d5db; /* gray-300 */
+            border-radius: 20px;
+            border: 3px solid #f8fafc; /* slate-50 */
+        }
+        .theme-athlete .chat-messages-container::-webkit-scrollbar-thumb {
+            background-color: #52525b; /* zinc-600 */
+            border-color: var(--bg-primary);
+        }
+      /* === END CHAT SCROLLBAR === */
+
+      /* === ATHLETE MODE BUTTON === */
+      .athlete-mode-inactive-button {
+        background: linear-gradient(135deg, #4b5563, #1f2937); /* gray-600 to gray-800 */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+      }
+      .athlete-mode-inactive-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        background: linear-gradient(135deg, #374151, #111827); /* gray-700 to gray-900 */
+      }
+      .athlete-mode-active-button {
+        background: linear-gradient(135deg, #ef4444, #f97316); /* red-500 to orange-500 */
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+        transition: all 0.3s ease;
+      }
+      .athlete-mode-active-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+      }
+
+      /* Shake animation for the inactive button to draw attention */
+      @keyframes shake {
+        10%, 90% { transform: translate3d(-1px, 0, 0); }
+        20%, 80% { transform: translate3d(2px, 0, 0); }
+        30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+        40%, 60% { transform: translate3d(4px, 0, 0); }
+      }
+      .shake-animation {
+        animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+      }
+      /* === END ATHLETE MODE BUTTON === */
+
+      /* Flame Animation */
+      @keyframes rise {
+        from {
+          transform: translateY(100%) scale(1.5);
+          opacity: 0.8;
+        }
+        to {
+          transform: translateY(-20%) scale(1);
+          opacity: 0;
+        }
+      }
+
+      .flame {
+        position: absolute;
+        bottom: 0;
+        width: 250px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255,165,0,0.8) 0%, rgba(255,69,0,0.6) 40%, rgba(220,20,60,0.3) 70%, rgba(0,0,0,0) 100%);
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        transform: rotate(-45deg);
+        animation: rise 2s ease-out forwards;
+        filter: blur(10px);
+      }
+
+      .flame:nth-child(2) {
+        width: 200px;
+        height: 250px;
+        animation-delay: 0.2s;
+        animation-duration: 1.8s;
+      }
+      .flame:nth-child(3) {
+        width: 300px;
+        height: 350px;
+        animation-delay: 0.4s;
+        animation-duration: 2.2s;
+      }
+
+      /* === DASHBOARD FAB === */
+      .dashboard-fab {
+        position: fixed;
+        bottom: 4rem; /* 64px */
+        left: 50%;
+        transform: translateX(-50%);
+        height: 3.5rem; /* 56px */
+        padding: 0 1.5rem; /* 24px */
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 20;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background-color: #ffffff;
+        border: 4px solid #f1f5f9; /* slate-100 */
+      }
+      .dashboard-fab:hover {
+        transform: translateX(-50%) translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      }
+      .dashboard-fab .icon {
+          transition: color 0.3s ease;
+          color: #00B894; /* brand-green */
+      }
+       .dashboard-fab .dashboard-fab-text {
+          transition: color 0.3s ease;
+          color: #00B894; /* brand-green */
+      }
+      .dashboard-fab.active {
+        background-color: var(--brand-green, #00B894);
+        border-color: #E6F8F0;
+      }
+      .dashboard-fab.active .icon, .dashboard-fab.active .dashboard-fab-text {
+        color: white;
+      }
+      .theme-athlete .dashboard-fab {
+        background-color: #27272a; /* zinc-800 */
+        border-color: #18181b; /* zinc-900 */
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+      }
+      .theme-athlete .dashboard-fab:hover {
+        background-color: #3f3f46; /* zinc-700 */
+      }
+       .theme-athlete .dashboard-fab .icon, .theme-athlete .dashboard-fab .dashboard-fab-text {
+        color: #d4d4d8; /* zinc-300 */
+       }
+      .theme-athlete .dashboard-fab.active {
+        background: var(--accent-red);
+        border-color: var(--bg-card);
+      }
+      .theme-athlete .dashboard-fab.active .icon, .theme-athlete .dashboard-fab.active .dashboard-fab-text {
+        color: white;
+      }
+      /* === END DASHBOARD FAB === */
+
+      /* === MARKDOWN STYLES === */
+      .markdown-content {
+        color: #334155; /* slate-700 */
+      }
+      .theme-athlete .markdown-content { color: var(--text-secondary); }
+
+      .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+        font-weight: 600;
+        margin-top: 1em;
+        margin-bottom: 0.5em;
+        color: #1e293b; /* slate-800 */
+      }
+      .theme-athlete .markdown-content h1, .theme-athlete .markdown-content h2, .theme-athlete .markdown-content h3 { color: var(--text-primary); }
+      
+      .markdown-content h1 { font-size: 1.25em; }
+      .markdown-content h2 { font-size: 1.15em; }
+      .markdown-content h3 { font-size: 1.1em; }
+      
+      .markdown-content p {
+        margin-bottom: 0.75em;
+        line-height: 1.6;
+      }
+      
+      .markdown-content ul, .markdown-content ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1em;
+        list-style-position: outside;
+      }
+      .markdown-content ul { list-style-type: disc; }
+      .markdown-content ol { list-style-type: decimal; }
+      .markdown-content li { margin-bottom: 0.25em; }
+      
+      .markdown-content strong {
+        font-weight: 600;
+        color: #1e293b; /* slate-800 */
+      }
+      .theme-athlete .markdown-content strong { color: var(--text-primary); }
+      
+      .markdown-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5em 0;
+        font-size: 0.9em;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+        background-color: #fff;
+      }
+      .theme-athlete .markdown-content table {
+        background-color: var(--bg-card);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      }
+      
+      .markdown-content th, .markdown-content td {
+        padding: 14px 18px;
+        text-align: left;
+      }
+      
+      .markdown-content thead tr {
+        background-color: #f8fafc; /* slate-50 */
+      }
+      .theme-athlete .markdown-content thead tr {
+        background-color: #3f3f46;
+      }
+      
+      .markdown-content th {
+        font-weight: 600;
+        color: #475569; /* slate-600 */
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #e2e8f0; /* slate-200 */
+      }
+      .theme-athlete .markdown-content th {
+        color: var(--text-secondary);
+        border-bottom-color: var(--border-color);
+      }
+      
+      .markdown-content tbody tr {
+        border-bottom: 1px solid #f1f5f9; /* slate-100 */
+      }
+      .theme-athlete .markdown-content tbody tr {
+         border-bottom-color: var(--border-color);
+      }
+      
+      .markdown-content tbody tr:last-of-type {
+        border-bottom: none;
+      }
+      .markdown-content tbody tr:hover {
+        background-color: #f8fafc; /* slate-50 */
+      }
+      .theme-athlete .markdown-content tbody tr:hover {
+         background-color: #3f3f46;
+      }
+      
+      .markdown-content td {
+        color: #334155; /* slate-700 */
+      }
+      .theme-athlete .markdown-content td {
+        color: var(--text-primary);
+      }
+      
+      /* === RESPONSIVE TABLE STYLES === */
+      @media screen and (max-width: 640px) {
+        .markdown-content table {
+          border: 0;
+          box-shadow: none;
+        }
+
+        .markdown-content table thead {
+          border: none;
+          clip: rect(0 0 0 0);
+          height: 1px;
+          margin: -1px;
+          overflow: hidden;
+          padding: 0;
+          position: absolute;
+          width: 1px;
+        }
+
+        .markdown-content table tr {
+          display: block;
+          margin-bottom: 1.25rem;
+          border: 1px solid #e2e8f0; /* slate-200 */
+          border-radius: 12px;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+          background-color: #ffffff;
+        }
+        .theme-athlete .markdown-content table tr {
+           border-color: var(--border-color);
+           background-color: var(--bg-card);
+        }
+
+        .markdown-content table td {
+          display: block;
+          text-align: right;
+          padding: 12px 16px;
+          border-bottom: 1px solid #f1f5f9; /* slate-100 */
+        }
+        .theme-athlete .markdown-content table td {
+          border-bottom-color: var(--border-color);
+        }
+
+        .markdown-content table td:last-child {
+          border-bottom: 0;
+        }
+
+        .markdown-content table td::before {
+          content: attr(data-label);
+          float: left;
+          font-weight: 600;
+          color: #475569; /* slate-600 */
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          margin-right: 1rem;
+        }
+        .theme-athlete .markdown-content table td::before {
+            color: var(--text-secondary);
+        }
+      }
+      /* === END MARKDOWN STYLES === */
+
+
+      /* Force light theme on form elements to override browser dark mode defaults */
+      input, textarea, select {
+        color-scheme: light;
+      }
+
+      .theme-athlete input, .theme-athlete textarea, .theme-athlete select {
+        color-scheme: dark;
+        background-color: var(--bg-card) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+      }
+      .theme-athlete input::placeholder, .theme-athlete textarea::placeholder {
+        color: var(--text-secondary);
+      }
+
+
+      /* === TOAST ANIMATION === */
+      @keyframes slideInUp {
+        from {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      .animate-slideInUp {
+        animation: slideInUp 0.5s ease-out forwards;
+      }
+
+      /* === XP DISPLAY === */
+      .xp-display-container {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          background-color: #f8fafc;
+          padding: 0.75rem 1rem;
+          border-radius: 1rem;
+          border: 1px solid #e2e8f0;
+      }
+      .theme-athlete .xp-display-container {
+        background-color: var(--bg-card);
+        border-color: var(--border-color);
+      }
+      .xp-level-badge {
+          position: relative;
+          width: 48px;
+          height: 48px;
+          background: linear-gradient(145deg, #fde047, #f59e0b); /* yellow-300 to orange-400 */
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #422006;
+          font-weight: bold;
+          font-size: 1.25rem;
+          flex-shrink: 0;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,0.2);
+          z-index: 1;
+      }
+      .theme-athlete .xp-level-badge {
+          background: linear-gradient(145deg, #f97316, #ef4444);
+          color: #fff;
+      }
+      .xp-level-icon {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          color: rgba(255,255,255,0.15);
+          stroke-width: 1.5;
+          opacity: 0.5;
+      }
+      .theme-athlete .xp-level-icon {
+          color: rgba(255,255,255,0.1);
+      }
+      .xp-bar-wrapper {
+          flex-grow: 1;
+      }
+      .xp-bar-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          margin-bottom: 0.25rem;
+      }
+      .xp-bar-label {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #1e293b;
+      }
+      .theme-athlete .xp-bar-label {
+          color: var(--text-primary);
+      }
+      .xp-bar-values {
+          font-size: 0.75rem;
+          font-weight: 500;
+          color: #64748b;
+      }
+       .theme-athlete .xp-bar-values {
+          color: var(--text-secondary);
+      }
+      .xp-bar-background {
+          width: 100%;
+          height: 8px;
+          background-color: #e5e7eb;
+          border-radius: 9999px;
+          overflow: hidden;
+      }
+      .theme-athlete .xp-bar-background {
+          background-color: #3f3f46;
+      }
+      .xp-bar-progress {
+          height: 100%;
+          background: linear-gradient(90deg, #34d399, #10b981);
+          border-radius: 9999px;
+          transition: width 0.5s ease-out;
+      }
+      .theme-athlete .xp-bar-progress {
+          background: linear-gradient(90deg, #fbbf24, #f59e0b);
+      }
+
+      /* === LEVEL BADGE BUTTON === */
+      .level-badge-button {
+          position: relative;
+          width: 44px;
+          height: 44px;
+          background-color: #f8fafc; /* slate-50 */
+          border: 1px solid #e2e8f0; /* slate-200 */
+          border-radius: 9999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease-in-out;
+          flex-shrink: 0;
+      }
+      .level-badge-button:hover {
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      .level-badge-button .level-badge-icon {
+          color: #f59e0b; /* amber-500 */
+          width: 20px;
+          height: 20px;
+          position: absolute;
+          opacity: 0.15;
+          z-index: 1;
+      }
+      .level-badge-button .level-badge-text {
+          position: relative;
+          z-index: 2;
+          font-weight: 700;
+          font-size: 1.125rem; /* 18px */
+          color: #1e293b; /* slate-800 */
+      }
+      .level-badge-button .level-badge-progress-ring {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          transform: rotate(-90deg);
+      }
+      .level-badge-button .level-badge-progress-ring circle {
+          transition: stroke-dashoffset 0.5s ease-out;
+      }
+
+      /* Athlete Theme */
+      .theme-athlete .level-badge-button {
+          background-color: var(--bg-card);
+          border-color: #52525b; /* zinc-600 */
+      }
+      .theme-athlete .level-badge-button .level-badge-icon {
+          color: #fcd34d; /* yellow-300 */
+      }
+      .theme-athlete .level-badge-button .level-badge-text {
+          color: #f4f4f5; /* zinc-100 */
+      }
+       .theme-athlete .level-badge-progress-ring .stroke-slate-200 {
+          stroke: #52525b; /* zinc-600 */
+      }
+       .theme-athlete .level-badge-progress-ring .stroke-amber-400 {
+          stroke: #fcd34d; /* yellow-300 */
+      }
+
+      /* === ACHIEVEMENT SEALS (3D Coin Style) === */
+      .achievement-seal {
+          position: relative;
+          background: #fff;
+          border-radius: 1rem;
+          border: 1px solid #e5e7eb;
+          padding: 1.25rem;
+          padding-top: 52px;
+          margin-top: 40px;
+          text-align: center;
+          transition: all 0.3s ease;
+      }
+      .theme-athlete .achievement-seal {
+          background: var(--bg-card);
+          border-color: var(--border-color);
+      }
+      .achievement-seal-unlocked:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+          border-color: #d1d5db;
+      }
+      .theme-athlete .achievement-seal-unlocked:hover {
+          box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+          border-color: #52525b;
+      }
+      
+      .achievement-seal-icon-wrapper {
+          position: absolute;
+          top: -40px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+      }
+      
+      .achievement-seal-icon-wrapper.unlocked {
+          background: radial-gradient(circle at 70% 30%, #fefce8, #facc15), linear-gradient(145deg, #fef9c3, #fde047, #eab308);
+          box-shadow: inset 0 2px 2px rgba(255,255,255,0.5), inset 0 -2px 3px rgba(202, 138, 4, 0.3), 0 0 0 4px #fff, 0 0 0 8px #facc15, 0 8px 15px rgba(234, 179, 8, 0.25);
+      }
+
+      /* ATHLETE MODE OVERRIDE FOR SEALS */
+      .theme-athlete .achievement-seal-icon-wrapper.unlocked {
+          background: radial-gradient(circle at 70% 30%, #fca5a5, #ef4444), linear-gradient(145deg, var(--accent-orange), var(--accent-red));
+          box-shadow: inset 0 2px 2px rgba(251, 191, 36, 0.4), inset 0 -2px 3px rgba(159, 18, 57, 0.4), 0 0 0 4px var(--bg-card), 0 0 0 8px var(--accent-orange), 0 8px 25px rgba(239, 68, 68, 0.5);
+      }
+      .theme-athlete .achievement-seal-icon-wrapper.unlocked .icon {
+          color: white;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+      }
+      .theme-athlete .achievement-seal-unlocked .achievement-seal-progress-text {
+          color: var(--accent-orange);
+      }
+      /* END ATHLETE OVERRIDE */
+      
+      .achievement-seal-icon-wrapper.locked {
+          background: linear-gradient(145deg, #e5e7eb, #d1d5db);
+          box-shadow: inset 0 3px 5px rgba(0,0,0,0.1), 0 0 0 4px #fff, 0 0 0 8px #d1d5db;
+      }
+      .theme-athlete .achievement-seal-icon-wrapper.locked {
+          background: linear-gradient(145deg, #3f3f46, #27272a);
+          box-shadow: inset 0 3px 5px rgba(0,0,0,0.5), 0 0 0 4px var(--bg-card), 0 0 0 8px #3f3f46;
+      }
+      
+      .achievement-seal-icon-wrapper.unlocked .icon {
+          color: #a16207;
+          stroke-width: 2.5;
+          filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));
+      }
+      
+      .achievement-seal-icon-wrapper.locked .icon {
+          color: #6b7280;
+          stroke-width: 2;
+          opacity: 0.8;
+      }
+      .theme-athlete .achievement-seal-icon-wrapper.locked .icon {
+          color: #a1a1aa;
+      }
+      
+      .achievement-seal-title {
+          font-weight: 700;
+          color: #1e293b; /* slate-800 */
+          font-size: 1.125rem;
+          margin-bottom: 0.25rem;
+      }
+      .theme-athlete .achievement-seal-title { color: var(--text-primary); }
+      
+      .achievement-seal-locked .achievement-seal-title {
+          color: #64748b; /* slate-500 */
+      }
+       .theme-athlete .achievement-seal-locked .achievement-seal-title { color: var(--text-secondary); }
+       
+      .achievement-seal-description {
+          font-size: 0.875rem;
+          color: #64748b; /* slate-500 */
+          line-height: 1.5;
+          min-height: 42px;
+      }
+       .theme-athlete .achievement-seal-description { color: var(--text-secondary); }
+       
+      .achievement-seal-progress-text {
+          margin-top: 1rem;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #64748b;
+      }
+      .theme-athlete .achievement-seal-progress-text {
+          color: #a1a1aa;
+      }
+      .achievement-seal-unlocked .achievement-seal-progress-text {
+          color: #16a34a;
+      }
+
+      /* === FEATURED ACHIEVEMENT BADGE (3D Coin Style) === */
+      .profile-featured-achievement {
+          position: absolute;
+          bottom: -5px;
+          right: -5px;
+          width: 36px;
+          height: 36px;
+          background: radial-gradient(circle at 30% 30%, #fffde7, #fde047), linear-gradient(145deg, #fef9c3, #fde047, #eab308);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 0 2px #fff, 
+                      inset 0 0 3px rgba(255, 255, 255, 0.7), 
+                      inset 0 -2px 3px rgba(161, 98, 7, 0.3), 
+                      0 4px 8px rgba(0, 0, 0, 0.25);
+          transition: all 0.3s ease;
+          z-index: 10;
+      }
+      .profile-featured-achievement:hover {
+          transform: scale(1.1) translateY(-1px);
+          box-shadow: 0 0 0 2px #fff,
+                      inset 0 0 3px rgba(255, 255, 255, 0.7),
+                      inset 0 -2px 3px rgba(161, 98, 7, 0.3),
+                      0 6px 12px rgba(234, 179, 8, 0.4);
+      }
+      .profile-featured-achievement .icon {
+          width: 20px;
+          height: 20px;
+          color: #a16207;
+          filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));
+      }
+      .theme-athlete .profile-featured-achievement {
+          background: radial-gradient(circle at 30% 30%, #fed7aa, #fb923c), linear-gradient(145deg, var(--accent-orange), var(--accent-red));
+          box-shadow: 0 0 0 2px var(--bg-card),
+                      inset 0 0 3px rgba(251, 191, 36, 0.5),
+                      inset 0 -2px 3px rgba(124, 45, 18, 0.5),
+                      0 4px 8px rgba(0, 0, 0, 0.5);
+      }
+      .theme-athlete .profile-featured-achievement:hover {
+          transform: scale(1.1) translateY(-1px);
+          box-shadow: 0 0 0 2px var(--bg-card),
+                      inset 0 0 3px rgba(251, 191, 36, 0.5),
+                      inset 0 -2px 3px rgba(124, 45, 18, 0.5),
+                      0 6px 15px rgba(239, 68, 68, 0.5);
+      }
+      .theme-athlete .profile-featured-achievement .icon {
+          color: white;
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+      }
+
+      /* === TUTORIAL STYLES === */
+      .tutorial-highlight-box {
+          position: fixed;
+          border-radius: 8px;
+          box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 15px rgba(255, 255, 255, 0.3);
+          transition-property: top, left, width, height;
+          transition-duration: 0.4s;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none;
+          z-index: 1001;
+      }
+
+      .tutorial-dialog {
+          position: fixed;
+          z-index: 1002;
+          background-color: white;
+          padding: 1.5rem;
+          border-radius: 12px;
+          width: 380px;
+          max-width: 90vw;
+          box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+          transition-property: opacity, transform;
+          transition-duration: 0.4s;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          opacity: 0;
+          transform: translateY(20px) scale(0.95);
+      }
+      .tutorial-dialog.visible {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+      }
+
+      .theme-athlete .tutorial-dialog {
+          background-color: var(--bg-card);
+          color: var(--text-primary);
+          border: 1px solid var(--border-color);
+      }
+
+      .tutorial-dialog h3 {
+          color: #1e293b;
+      }
+      .theme-athlete .tutorial-dialog h3 { color: var(--text-primary); }
+
+
+       .tutorial-dialog p {
+          color: #475569;
+      }
+      .theme-athlete .tutorial-dialog p { color: var(--text-secondary); }
+
+
+      /* === TAGS COLLAPSE/EXPAND === */
+      .tags-container {
+          max-height: 500px; /* Large enough to hold all tags */
+          overflow: hidden;
+          transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.4s ease-in-out;
+          opacity: 1;
+      }
+
+      .tags-container.collapsed {
+          max-height: 0;
+          opacity: 0;
+      }
+
+      /* === COLLAPSIBLE CARD === */
+      .collapsible-content {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out;
+          opacity: 0;
+      }
+      .collapsible-content.open {
+          max-height: 1000px; /* Large enough for content */
+          opacity: 1;
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
+    "react-dom/server": "https://esm.sh/react-dom@^19.1.1/server",
+    "react/": "https://esm.sh/react@^19.1.1/",
+    "marked": "https://esm.sh/marked@^12.0.2",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.26.0"
+  }
+}
+</script>
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="index.js"></script>
+</body>
+</html>
