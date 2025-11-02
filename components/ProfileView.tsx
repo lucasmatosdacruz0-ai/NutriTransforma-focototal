@@ -166,14 +166,14 @@ const ProfileView: FC<ProfileViewProps> = ({ userData, handlers, setActiveView }
                     <div className="relative group flex-shrink-0">
                         <button 
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-24 h-24 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-green"
+                            className="w-28 h-28 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-green transition-all duration-300 hover:scale-105 hover:ring-4 hover:ring-brand-green/30"
                             aria-label="Alterar foto de perfil"
                         >
                             {profilePicture ? (
-                                <img src={profilePicture} alt="Foto de Perfil" className="w-24 h-24 rounded-full object-cover" />
+                                <img src={profilePicture} alt="Foto de Perfil" className="w-28 h-28 rounded-full object-cover" />
                             ) : (
-                                <div className="w-24 h-24 bg-brand-green-light rounded-full flex items-center justify-center theme-athlete:bg-slate-700">
-                                    <UserIcon className="w-12 h-12 text-brand-green-dark theme-athlete:text-slate-400" />
+                                <div className="w-28 h-28 bg-brand-green-light rounded-full flex items-center justify-center theme-athlete:bg-slate-700">
+                                    <UserIcon className="w-14 h-14 text-brand-green-dark theme-athlete:text-slate-400" />
                                 </div>
                             )}
                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 rounded-full flex items-center justify-center transition-opacity duration-300">
