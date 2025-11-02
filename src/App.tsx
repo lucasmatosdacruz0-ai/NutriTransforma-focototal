@@ -1,42 +1,43 @@
 
+
 import React, { useState, useEffect, useCallback, FC } from 'react';
-import { View, UserData, UserDataHandlers, Message, DailyPlan, Recipe, RecipesViewState, NotificationState, UpsellModalState, PlanKey, DietDifficulty, MacroData, FoodItem, Meal } from './types';
-import OnboardingFlow from './components/OnboardingFlow';
-import Sidebar from './components/Sidebar';
-import BottomNav from './components/BottomNav';
-import Dashboard from './components/Dashboard';
-import ChatView from './components/ChatView';
-import PlanoAlimentarView from './components/PlanoAlimentarView';
-import ErrorBoundary from './components/ErrorBoundary';
-import FavoritesView from './components/FavoritesView';
-import ProgressView from './components/ProgressView';
-import ProfileView from './components/ProfileView';
-import FeaturesView from './components/FeaturesView';
-import RecipesView from './components/RecipesView';
-import AdminView from './components/AdminView';
-import AchievementsView from './components/AchievementsView';
-import ManageSubscriptionView from './components/ManageSubscriptionView';
-import SubscriptionBlockView from './components/SubscriptionBlockView';
-import SubscriptionModal from './components/SubscriptionModal';
-import UpsellModal from './components/UpsellModal';
-import ShoppingListModal from './components/ShoppingListModal';
-import FlameOverlay from './components/FlameOverlay';
-import Tutorial from './components/Tutorial';
-import StartTutorialModal from './components/StartTutorialModal';
-import FocoTotalView from './components/FocoTotalView'; // Import the new FocoTotalView
+import { View, UserData, UserDataHandlers, Message, DailyPlan, Recipe, RecipesViewState, NotificationState, UpsellModalState, PlanKey, DietDifficulty, MacroData, FoodItem, Meal } from '../types';
+import OnboardingFlow from '../components/OnboardingFlow';
+import Sidebar from '../components/Sidebar';
+import BottomNav from '../components/BottomNav';
+import Dashboard from '../components/Dashboard';
+import ChatView from '../components/ChatView';
+import PlanoAlimentarView from '../components/PlanoAlimentarView';
+import ErrorBoundary from '../components/ErrorBoundary';
+import FavoritesView from '../components/FavoritesView';
+import ProgressView from '../components/ProgressView';
+import ProfileView from '../components/ProfileView';
+import FeaturesView from '../components/FeaturesView';
+import RecipesView from '../components/RecipesView';
+import AdminView from '../components/AdminView';
+import AchievementsView from '../components/AchievementsView';
+import ManageSubscriptionView from '../components/ManageSubscriptionView';
+import SubscriptionBlockView from '../components/SubscriptionBlockView';
+import SubscriptionModal from '../components/SubscriptionModal';
+import UpsellModal from '../components/UpsellModal';
+import ShoppingListModal from '../components/ShoppingListModal';
+import FlameOverlay from '../components/FlameOverlay';
+import Tutorial from '../components/Tutorial';
+import StartTutorialModal from '../components/StartTutorialModal';
+import FocoTotalView from '../components/FocoTotalView'; // Import the new FocoTotalView
 
 
 // FIX: Import missing icons for FAB
-import { CalendarIcon } from './components/icons/CalendarIcon';
-import { HomeIcon } from './components/icons/HomeIcon';
+import { CalendarIcon } from '../components/icons/CalendarIcon';
+import { HomeIcon } from '../components/icons/HomeIcon';
 
 import * as geminiService from './services/geminiService';
-import { calculateNewMacroGoals } from './components/calculations';
-import { sanitizeDailyPlan, sanitizeMeal } from './components/utils/sanitizers';
-import { calculateXPForLevel } from './components/utils/xpUtils';
-import { ALL_ACHIEVEMENTS } from './constants/achievements';
-import { TUTORIAL_STEPS } from './constants/tutorialSteps';
-import { PLANS, ALL_FEATURES } from './constants/plans';
+import { calculateNewMacroGoals } from '../components/calculations';
+import { sanitizeDailyPlan, sanitizeMeal } from '../components/utils/sanitizers';
+import { calculateXPForLevel } from '../components/utils/xpUtils';
+import { ALL_ACHIEVEMENTS } from '../constants/achievements';
+import { TUTORIAL_STEPS } from '../constants/tutorialSteps';
+import { PLANS, ALL_FEATURES } from '../constants/plans';
 
 const defaultUserData: UserData = {
     isRegistered: false,
