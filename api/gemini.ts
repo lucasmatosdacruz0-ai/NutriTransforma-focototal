@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 // Ensure the API_KEY is available in the environment.
 const API_KEY = process.env.API_KEY;
@@ -153,7 +153,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 prompt: prompt as string,
                 config: { numberOfImages: 1, outputMimeType: 'image/jpeg' }
             });
-            const base64ImageBytes = response.generatedImages[0].image.imageBytes;
+            const base64ImageBytes = response?.generatedImages?.[0]?.image?.imageBytes;
+            if (!base64ImageBytes) {
+                throw new Error('A IA não retornou uma imagem válida.');
+            }
             return res.status(200).json({ data: base64ImageBytes });
         }
         
@@ -163,7 +166,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             config,
         });
 
-        const text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
+        const text = (response?.text || '').replace(/^```json\n?/, '').replace(/```$/, '');
+        if (!text) {
+            throw new Error('A IA retornou uma resposta vazia.');
+        }
         const data = config.responseMimeType === "application/json" ? JSON.parse(text) : text;
 
         return res.status(200).json({ data });
