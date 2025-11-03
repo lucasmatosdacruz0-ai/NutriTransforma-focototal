@@ -34,12 +34,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (error: any) {
     console.error("API ERROR in sendMessageToAI:", error);
-    // If headers are not sent, we can still send a JSON error
     if (!res.headersSent) {
         res.status(500).json({ error: error.message });
     } else {
-        // If headers are sent, we can't send a new status code, so just end the stream.
-        // The client-side will need to handle an abruptly closed stream.
         res.end();
     }
   }
