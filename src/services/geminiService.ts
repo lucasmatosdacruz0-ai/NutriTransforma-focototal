@@ -1,92 +1,107 @@
+
 import { DailyPlan, Meal, UserData, MacroData, Recipe, FoodItem } from '../types';
 
-// Helper function for making API calls to our secure backend endpoint
-async function apiCall<T>(action: string, payload: object): Promise<T> {
-    try {
-        const response = await fetch('/api/gemini', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ action, payload }),
-        });
+/**
+ * Helper function to make API calls to our secure backend endpoints.
+ * It standardizes the fetch call and error handling.
+ */
+async function callAPI<T>(endpoint: string, body: object): Promise<T> {
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
-        if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
-            throw new Error(errorBody.error || `HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        return result.data as T;
-
-    } catch (error) {
-        console.error(`Error in apiCall for action '${action}':`, error);
-        if (error instanceof Error) {
-            if (error.message.includes("API key not valid")) {
-                throw new Error('Chave de API inválida. Verifique suas configurações na Vercel.');
-            }
-             throw new Error(`Ocorreu um erro ao comunicar com o servidor: ${error.message}`);
-        }
-        throw new Error('Ocorreu um erro desconhecido.');
+    if (!res.ok) {
+        const errorBody = await res.json().catch(() => ({ error: 'API Error: Failed to parse error response' }));
+        console.error(`API Error for ${endpoint}:`, errorBody);
+        throw new Error(errorBody.error || `API Error: ${res.status}`);
     }
+
+    const data = await res.json();
+    return data.result;
+  } catch (error) {
+    console.error(`Error in callAPI for endpoint '${endpoint}':`, error);
+    if (error instanceof Error) {
+         throw new Error(`Ocorreu um erro ao comunicar com o servidor: ${error.message}`);
+    }
+    throw new Error('Ocorreu um erro desconhecido ao se comunicar com o servidor.');
+  }
 }
 
-
-// --- EXPORTED FUNCTIONS ---
-
+/**
+ * Special handler for streaming responses from the backend.
+ */
 export async function* sendMessageToAI(message: string, history: any[]): AsyncGenerator<{ text: string }, void, unknown> {
-    try {
-        const response = await fetch('/api/gemini', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'sendMessageToAI', payload: { message, history } }),
-        });
+    const response = await fetch('/api/sendMessageToAI', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, history }),
+    });
 
-        if (!response.ok || !response.body) {
-            const errorBody = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
-            throw new Error(errorBody.error || `HTTP error! status: ${response.status}`);
-        }
+    if (!response.ok || !response.body) {
+        const errorBody = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+        throw new Error(errorBody.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-                break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep the potentially incomplete last line
+
+        for (const line of lines) {
+            if (line.trim() === '') continue;
+            try {
+                const parsed = JSON.parse(line);
+                if(parsed.text) {
+                    yield { text: parsed.text };
+                }
+            } catch (e) {
+                console.error("Failed to parse stream chunk:", line, e);
             }
-            const chunkText = decoder.decode(value);
-            yield { text: chunkText };
         }
-
-    } catch (error) {
-        console.error("Streaming chat error:", error);
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        throw new Error(`Ocorreu um erro ao comunicar com o chat: ${errorMessage}`);
+    }
+    if (buffer.trim()) {
+        try {
+            const parsed = JSON.parse(buffer);
+            if(parsed.text) {
+                yield { text: parsed.text };
+            }
+        } catch(e) {
+            console.error("Failed to parse final stream chunk:", buffer, e);
+        }
     }
 }
 
 export const parseMealPlanText = (text: string): Promise<DailyPlan> => {
-    return apiCall<DailyPlan>('parseMealPlanText', { text });
+    return callAPI("/api/parseMealPlanText", { text });
 };
 
 export const generateDailyPlan = (userData: UserData, date: Date): Promise<DailyPlan> => {
-    return apiCall<DailyPlan>('generateDailyPlan', { 
+    return callAPI("/api/generateDailyPlan", { 
         userData, 
         dateString: date.toISOString().split('T')[0] 
     });
 };
 
 export const regenerateDailyPlan = (userData: UserData, currentPlan: DailyPlan, numberOfMeals?: number): Promise<DailyPlan> => {
-    return apiCall<DailyPlan>('regenerateDailyPlan', { userData, currentPlan, numberOfMeals });
+    return callAPI("/api/regenerateDailyPlan", { userData, currentPlan, numberOfMeals });
 };
 
 export const adjustDailyPlanForMacro = (userData: UserData, currentPlan: DailyPlan, macroToFix: keyof Omit<MacroData, 'calories'>): Promise<DailyPlan> => {
-    return apiCall<DailyPlan>('adjustDailyPlanForMacro', { userData, currentPlan, macroToFix });
+    return callAPI("/api/adjustDailyPlanForMacro", { userData, currentPlan, macroToFix });
 };
 
 export const generateWeeklyPlan = (userData: UserData, weekStartDate: Date, observation?: string): Promise<Record<string, DailyPlan>> => {
-    return apiCall<Record<string, DailyPlan>>('generateWeeklyPlan', { 
+    return callAPI("/api/generateWeeklyPlan", { 
         userData, 
         weekStartDate: weekStartDate.toISOString().split('T')[0],
         observation 
@@ -94,38 +109,38 @@ export const generateWeeklyPlan = (userData: UserData, weekStartDate: Date, obse
 };
 
 export const regenerateMealFromPrompt = (prompt: string, meal: Meal, userData: UserData): Promise<Meal> => {
-    return apiCall<Meal>('regenerateMealFromPrompt', { prompt, meal, userData });
+    return callAPI("/api/regenerateMealFromPrompt", { prompt, meal, userData });
 };
 
 export const analyzeMealFromText = (description: string): Promise<MacroData> => {
-    return apiCall<MacroData>('analyzeMealFromText', { description });
+    return callAPI("/api/analyzeMealFromText", { description });
 };
 
 export const analyzeMealFromImage = (imageDataUrl: string): Promise<MacroData> => {
-    return apiCall<MacroData>('analyzeMealFromImage', { imageDataUrl });
+    return callAPI("/api/analyzeMealFromImage", { imageDataUrl });
 };
 
 export const analyzeProgress = (userData: UserData): Promise<string> => {
-    return apiCall<string>('analyzeProgress', { userData });
+    return callAPI("/api/analyzeProgress", { userData });
 };
 
 export const generateShoppingList = (weekPlan: DailyPlan[]): Promise<string> => {
-    return apiCall<string>('generateShoppingList', { weekPlan });
+    return callAPI("/api/generateShoppingList", { weekPlan });
 };
 
 export const getFoodInfo = (question: string, mealContext?: Meal): Promise<string> => {
-    return apiCall<string>('getFoodInfo', { question, mealContext });
+    return callAPI("/api/getFoodInfo", { question, mealContext });
 };
 
 export const getFoodSubstitution = (itemToSwap: FoodItem, mealContext: Meal, userData: UserData): Promise<FoodItem> => {
-    return apiCall<FoodItem>('getFoodSubstitution', { itemToSwap, mealContext, userData });
+    return callAPI("/api/getFoodSubstitution", { itemToSwap, mealContext, userData });
 };
 
 export const generateImageFromPrompt = async (prompt: string): Promise<string> => {
-    const base64ImageBytes = await apiCall<string>('generateImageFromPrompt', { prompt });
+    const base64ImageBytes = await callAPI<string>("/api/generateImageFromPrompt", { prompt });
     return `data:image/jpeg;base64,${base64ImageBytes}`;
 };
 
 export const findRecipes = (query: string, userData: UserData, numRecipes: number = 3): Promise<Recipe[]> => {
-    return apiCall<Recipe[]>('findRecipes', { query, userData, numRecipes });
+    return callAPI("/api/findRecipes", { query, userData, numRecipes });
 };
