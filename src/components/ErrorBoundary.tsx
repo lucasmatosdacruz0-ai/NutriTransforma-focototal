@@ -9,7 +9,7 @@ interface State {
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, State> {
-  // FIX: The component's state was not being initialized correctly. State is now initialized within the constructor for compatibility and correctness.
+  // FIX: The component's state was not being initialized, causing TypeScript errors. State is now initialized in the constructor to ensure `this.state` and `this.props` are available.
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };

@@ -1,9 +1,5 @@
 
 
-
-
-
-
 import React, { useState, useEffect, useCallback, FC } from 'react';
 import { View, UserData, UserDataHandlers, Message, DailyPlan, Recipe, RecipesViewState, NotificationState, UpsellModalState, PlanKey, DietDifficulty, MacroData, FoodItem, Meal } from './types';
 import OnboardingFlow from './components/OnboardingFlow';
@@ -710,7 +706,7 @@ const App: FC = () => {
             <Sidebar activeView={activeView} setActiveView={setActiveView} userData={userData} handlers={handlers} />
             <main className="flex-1 flex flex-col overflow-hidden relative">
                 <div className="flex-1 overflow-y-auto p-4 pb-40 md:p-6 lg:p-8">
-                    {/* FIX: Wrapped renderActiveView() inside the ErrorBoundary component to provide the required 'children' prop. */}
+                    {/* FIX: The ErrorBoundary component requires a 'children' prop. Wrapping renderActiveView() inside ErrorBoundary provides this prop and ensures that any rendering errors within the view are caught. */}
                     <ErrorBoundary>
                         {renderActiveView()}
                     </ErrorBoundary>
