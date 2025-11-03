@@ -44,7 +44,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userData, handlers, setActiveView
     const [isMealModalOpen, setMealModalOpen] = useState(false);
     const [isWaterReminderModalOpen, setWaterReminderModalOpen] = useState(false);
     const [isAdjustGoalModalOpen, setAdjustGoalModalOpen] = useState(false);
-    const [isShaking, setIsShaking] = useState(false);
     
     const [newWeight, setNewWeight] = useState(weight.toString());
 
@@ -65,7 +64,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userData, handlers, setActiveView
 
     const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
     const isTodayCompleted = useMemo(() => completedDays.includes(todayStr), [completedDays, todayStr]);
-    const isAthleteMode = userData.dietDifficulty === 'athlete';
 
     const todaysPlan = useMemo(() => {
         if (!mealPlan) return null;
@@ -133,31 +131,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userData, handlers, setActiveView
     };
 
     useEffect(() => {
-        if (userData.isSubscribed) {
-            setIsShaking(false);
-            return;
-        }
-
-        let shakeTimeout: ReturnType<typeof setTimeout>;
-        let shakeInterval: ReturnType<typeof setInterval>;
-
-        const triggerShake = () => {
-            setIsShaking(true);
-            shakeTimeout = setTimeout(() => setIsShaking(false), 820); // Animation duration
-        };
-        
-        const initialTimeout = setTimeout(triggerShake, 1200); // Shake once on load
-        shakeInterval = setInterval(triggerShake, 8000); // Shake every 8 seconds
-
-        return () => {
-            clearTimeout(initialTimeout);
-            clearTimeout(shakeTimeout);
-            clearInterval(shakeInterval);
-        };
-    }, [userData.isSubscribed]);
-
-
-    useEffect(() => {
         if (typeof window === 'undefined' || !('Notification' in window)) {
             return;
         }
@@ -190,18 +163,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userData, handlers, setActiveView
             scheduledTimers.forEach(clearTimeout);
         };
     }, [waterReminders]);
-
-    const handleAthleteModeClick = () => {
-        if (userData.isSubscribed) {
-            handleChangeDietDifficulty(isAthleteMode ? 'normal' : 'athlete');
-        } else {
-            handlers.openSubscriptionModal();
-        }
-    };
-
-    const athleteButtonText = userData.isSubscribed
-        ? (isAthleteMode ? 'Modo Atleta Ativado' : 'Ativar Modo Atleta')
-        : 'Desbloquear Modo Atleta';
 
     const LevelBadgeButton = () => {
         const xpForNextLevel = calculateXPForLevel(level);
@@ -289,18 +250,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userData, handlers, setActiveView
           </div>
       </header>
       
-        <button
-            id="athlete-mode-toggle"
-            onClick={handleAthleteModeClick}
-            className={`w-full p-4 rounded-2xl text-white font-bold text-lg flex items-center justify-center gap-3
-            ${isAthleteMode
-                ? 'athlete-mode-active-button'
-                : 'athlete-mode-inactive-button'
-            } ${isShaking ? 'shake-animation' : ''}`.trim()}
-        >
-            <FireIcon className="w-6 h-6" />
-            <span>{athleteButtonText}</span>
-        </button>
+      <DietModeSelector 
+        currentDifficulty={userData.dietDifficulty} 
+        onChange={handleChangeDietDifficulty}
+        isSubscribed={userData.isSubscribed}
+        openSubscriptionModal={handlers.openSubscriptionModal}
+      />
 
 
       <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2">

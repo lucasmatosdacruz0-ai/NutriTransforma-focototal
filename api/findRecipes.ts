@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     const { query, userData, numRecipes } = req.body;
     const userProfile = buildUserProfile(userData);
     const prompt = `Encontre ${numRecipes} receitas com base na busca: "${query}". Para cada receita, forneça um prompt de imagem otimizado para um gerador de imagens. Responda APENAS com o JSON.\n${userProfile}`;

@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     const { userData, weekStartDate, observation } = req.body;
     const userProfile = buildUserProfile(userData);
     const prompt = `Crie um plano alimentar para 7 dias, começando em ${weekStartDate}. ${observation ? `Observação: ${observation}`: ''} Retorne um array de 7 objetos DailyPlan. Responda APENAS com o JSON.\n${userProfile}`;

@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     const { itemToSwap, mealContext, userData } = req.body;
     const userProfile = buildUserProfile(userData);
     const prompt = `Sugira um substituto para o item "${itemToSwap.name}" no contexto da refeição "${mealContext.name}". O substituto deve ter macros similares. Responda APENAS com o JSON do novo FoodItem.\n${userProfile}`;

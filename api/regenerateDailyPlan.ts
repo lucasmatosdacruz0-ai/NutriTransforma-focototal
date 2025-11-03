@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
     const { userData, currentPlan, numberOfMeals } = req.body;
     const userProfile = buildUserProfile(userData);
     const prompt = `Com base no perfil do usuário, gere um novo plano alimentar para a data ${currentPlan.date}. ${numberOfMeals ? `O plano deve ter exatamente ${numberOfMeals} refeições.` : ''} O plano deve ser uma alternativa ao plano original, mantendo as mesmas metas. Responda APENAS com o JSON.\n${userProfile}`;
