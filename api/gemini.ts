@@ -1,3 +1,4 @@
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from "@google/genai";
 
@@ -17,7 +18,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const { action, payload } = req.body;
         
-        // --- PROMPT ENGINEERING HELPERS ---
         const buildUserProfile = (userData: any): string => `
         ### Dados do Usuário
         - **Idade:** ${userData.age}
@@ -40,8 +40,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Handle streaming chat action separately
         if (action === 'sendMessageToAI') {
             const { message, history } = payload;
-            const modelName = 'gemini-2.5-flash';
-
             const contents = history.map((h: any) => ({
                 role: h.sender === 'user' ? 'user' : 'model',
                 parts: [{ text: h.text }]
@@ -49,23 +47,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             contents.push({ role: 'user', parts: [{ text: message }] });
 
             const resultStream = await ai.models.generateContentStream({
-                model: modelName,
+                model: 'gemini-2.5-flash',
                 contents,
             });
             
-            res.setHeader('Content-Type', 'text/plain');
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
             for await (const chunk of resultStream) {
-                const chunkText = chunk.text;
-                if (chunkText) {
-                    res.write(chunkText);
+                if (chunk.text) {
+                    res.write(chunk.text);
                 }
             }
             return res.end();
         }
 
-        // Handle other actions
+        // Handle other non-streaming actions
         let model: string;
-        let prompt: string | object;
+        let prompt: any;
         let config: any = { responseMimeType: "application/json" };
         let isImageGen = false;
 
@@ -86,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 
                 prompt = {
                     parts: [
-                        { text: "Analise esta imagem de uma refeição e retorne a estimativa de macronutrientes." },
+                        { text: "Analise esta imagem de uma refeição e retorne a estimativa de macronutrientes no formato JSON." },
                         { inlineData: { mimeType: mimeTypeMatch[1], data: base64Data } }
                     ]
                 };
@@ -167,8 +164,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         const text = (response?.text || '').replace(/^```json\n?/, '').replace(/```$/, '');
-        if (!text) {
-            throw new Error('A IA retornou uma resposta vazia.');
+        if (!text && config.responseMimeType === "application/json") {
+            throw new Error('A IA retornou uma resposta JSON vazia.');
         }
         const data = config.responseMimeType === "application/json" ? JSON.parse(text) : text;
 
