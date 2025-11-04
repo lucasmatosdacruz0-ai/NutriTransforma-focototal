@@ -5,6 +5,7 @@ import { DailyPlan, FoodItem, MacroData, Meal, Recipe, UserData } from '../src/t
 
 export const config = {
   runtime: "nodejs20.x",
+  maxDuration: 60, // Aumenta o tempo limite para chamadas de IA mais longas
 };
 
 const API_KEY = process.env.API_KEY;
@@ -24,6 +25,7 @@ function buildUserProfile(userData: UserData): string {
 
 function safeJsonParse(text: string): any {
     try {
+        // Remove markdown code fences if they exist
         const cleanText = text.replace(/^```json\n?/, '').replace(/\n?```$/, '');
         return JSON.parse(cleanText);
     } catch (e) {
@@ -44,6 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         const { action, payload } = req.body;
         
+        // --- AÇÃO DE STREAMING (CHAT) ---
         if (action === 'sendMessageToAI') {
             const { message, history } = payload;
         
@@ -61,13 +64,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             res.setHeader('Content-Type', 'application/octet-stream');
             
             for await (const chunk of resultStream) {
-                const text = chunk.text;
+                const text = chunk.text ?? "";
                 if (text) {
+                    // Envia chunks de JSON delimitados por nova linha para o front-end
                     res.write(JSON.stringify({ text }) + '\n');
                 }
             }
             return res.end();
         }
+
+        // --- AÇÕES NÃO-STREAMING ---
 
         const userProfile = payload.userData ? buildUserProfile(payload.userData) : '';
         const model = 'gemini-2.5-flash';
@@ -83,7 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     config: { numberOfImages: 1, outputMimeType: 'image/jpeg' }
                 });
                 const image = response.generatedImages?.[0]?.image;
-                if (!image) {
+                if (!image?.imageBytes) {
                     throw new Error("A IA não conseguiu gerar uma imagem.");
                 }
                 return res.status(200).json({ result: image.imageBytes });
@@ -133,6 +139,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 contents = `Encontre ${payload.numRecipes} receitas com base na busca: "${payload.query}". Para cada receita, forneça um prompt de imagem otimizado para um gerador de imagens. Responda APENAS com o JSON.\n${userProfile}`;
                 break;
 
+            // Ações que esperam texto simples como resposta
             case 'analyzeProgress':
                 isPlainTextResponse = true;
                 contents = `Analise os dados de progresso do usuário e forneça um resumo motivacional com dicas. Fale diretamente com o usuário.\n${userProfile}`;
@@ -163,6 +170,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         const result = isPlainTextResponse ? text : safeJsonParse(text);
 
+        // Tratamento especial para plano semanal que vem como array
         if (action === 'generateWeeklyPlan' && Array.isArray(result)) {
             const planRecord: Record<string, any> = {};
             for (const dayPlan of result) {
@@ -180,6 +188,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!res.headersSent) {
             return res.status(500).json({ error: err.message || 'Ocorreu um erro interno no servidor.' });
         } else {
+            // Se os headers já foram enviados (em caso de streaming), apenas encerra a resposta.
             res.end();
         }
     }
