@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Message, UserData, UserDataHandlers } from '../types';
 import { BowlIcon, UserIcon, SendIcon, TrashIcon, ClipboardIcon, CheckIcon, SparklesIcon, ChevronDownIcon } from './icons';
@@ -79,50 +81,36 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
         });
     };
 
-    const sendPromptAndStream = async (prompt: string, isButtonAction: boolean = false, featureKey?: string) => {
+    // FIX: Updated sendPrompt to handle streaming responses
+    const sendPrompt = async (prompt: string, isButtonAction: boolean = false, featureKey?: string) => {
         if (isLoading) return;
 
         const userMessageText = isButtonAction ? `*Ação solicitada: ${prompt.split('\n')[0]}*` : prompt;
         const userMessage: Message = { sender: 'user', text: userMessageText };
-        const thinkingMessage: Message & {type: 'thinking'} = { sender: 'bot', text: 'NutriBot está pensando...', type: 'thinking' };
+        
+        const botMessage: Message = { sender: 'bot', text: '', isStreaming: true };
 
-        setMessages(prev => [...prev, userMessage, thinkingMessage]);
-        if (!isButtonAction) setInput('');
+        setMessages(prev => [...prev, userMessage, botMessage]);
+        if (!isButtonAction) {
+            setInput('');
+        }
         setIsLoading(true);
 
         try {
             const stream = await handlers.handleChatSendMessage(prompt, featureKey);
             let botResponse = '';
-            let firstChunk = true;
-
             for await (const chunk of stream) {
-                const chunkText = chunk.text;
-                botResponse += chunkText;
-                
-                if (firstChunk) {
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        const lastMessage = newMessages[newMessages.length - 1];
-                        if (lastMessage?.sender === 'bot' && (lastMessage as any).type === 'thinking') {
-                           lastMessage.text = botResponse;
-                           delete (lastMessage as any).type;
-                           lastMessage.isStreaming = true;
-                        }
-                        return newMessages;
-                    });
-                    firstChunk = false;
-                } else {
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        const lastMessage = newMessages[newMessages.length - 1];
-                        if (lastMessage?.sender === 'bot') {
-                            lastMessage.text = botResponse;
-                        }
-                        return newMessages;
-                    });
-                }
+                botResponse += chunk.text;
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastMessage = newMessages[newMessages.length - 1];
+                    if (lastMessage.sender === 'bot') {
+                        lastMessage.text = botResponse;
+                    }
+                    return newMessages;
+                });
             }
-            
+
             const botResponseLower = botResponse.toLowerCase();
             if ((botResponseLower.includes('plano alimentar') || botResponseLower.includes('dieta')) && botResponse.includes('|')) {
                 onNewMealPlanText(botResponse);
@@ -131,19 +119,19 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
             setMessages(prev => {
                 const newMessages = [...prev];
                 const lastMessage = newMessages[newMessages.length - 1];
-                if (lastMessage?.sender === 'bot') {
+                if (lastMessage.sender === 'bot') {
                     lastMessage.isStreaming = false;
                 }
                 return newMessages;
             });
+
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
             setMessages(prev => {
                 const newMessages = [...prev];
                 const lastMessage = newMessages[newMessages.length - 1];
-                if (lastMessage?.sender === 'bot') {
+                 if (lastMessage.sender === 'bot') {
                     lastMessage.text = `Desculpe, ocorreu um erro. ${errorMessage}`;
-                    delete (lastMessage as any).type;
                     lastMessage.isStreaming = false;
                 }
                 return newMessages;
@@ -156,15 +144,16 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
-        sendPromptAndStream(input, false);
+        sendPrompt(input, false);
     };
     
+    // FIX: Updated renderBotMessage to handle streaming indicator
     const renderBotMessage = (msg: ChatMessage) => {
         if (msg.type === 'thinking') {
              return `<div class="flex items-center gap-2"><div class="dot-flashing"></div><span>${msg.text}</span></div>`;
         }
         const rawMarkup = marked.parse(msg.text, { gfm: true, breaks: true }) as string;
-        const streamingIndicator = msg.isStreaming ? '<span class="inline-block w-2 h-4 bg-slate-600 animate-pulse ml-2"></span>' : '';
+        const streamingIndicator = msg.isStreaming ? '<span class="inline-block w-2 h-4 bg-slate-600 animate-pulse ml-1"></span>' : '';
         return rawMarkup + streamingIndicator;
     };
 
@@ -172,15 +161,15 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
         const { diets, restrictions } = userData.dietaryPreferences;
         const preferencesPrompt = `Minhas preferências: Dietas(${diets.join(', ')}), Restrições(${restrictions.join(', ')}).`;
         const prompt = `Crie uma dieta para um dia, com café, almoço, lanche e jantar. Meta: ${userData.macros.calories.goal} kcal. ${preferencesPrompt} Apresente em uma tabela.`;
-        sendPromptAndStream(prompt, true, 'dailyPlanGenerations');
+        sendPrompt(prompt, true, 'dailyPlanGenerations');
     };
 
     const handleGenerateShoppingList = () => {
-        sendPromptAndStream("Com base na dieta que você acabou de gerar, crie uma lista de compras detalhada.", true, 'shoppingLists');
+        sendPrompt("Com base na dieta que você acabou de gerar, crie uma lista de compras detalhada.", true, 'shoppingLists');
     };
 
     const handleAboutMe = () => {
-        sendPromptAndStream(`Faça um resumo motivacional e com dicas sobre minha evolução, com base nos meus dados atuais.`, true, 'progressAnalyses');
+        sendPrompt(`Faça um resumo motivacional e com dicas sobre minha evolução, com base nos meus dados atuais.`, true, 'progressAnalyses');
     };
 
     const canGenerateList = useMemo(() => {

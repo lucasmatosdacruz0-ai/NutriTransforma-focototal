@@ -31,57 +31,11 @@ async function callAPI<T>(action: string, payload: object): Promise<T> {
 }
 
 /**
- * Special handler for streaming chat responses from the backend.
+ * Sends a message to the AI and gets a single, complete response.
  */
-export async function* sendMessageToAI(message: string, history: any[]): AsyncGenerator<{ text: string }, void, unknown> {
-    const response = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'sendMessageToAI', payload: { message, history } }),
-    });
-
-    if (!response.ok || !response.body) {
-        const errorBody = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
-        throw new Error(errorBody.error || `HTTP error! status: ${response.status}`);
-    }
-    
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        // The backend sends newline-delimited JSON
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep the potentially incomplete last line
-
-        for (const line of lines) {
-            if (line.trim() === '') continue;
-            try {
-                const parsed = JSON.parse(line);
-                if(parsed.text) {
-                    yield { text: parsed.text };
-                }
-            } catch (e) {
-                console.error("Failed to parse stream chunk:", line, e);
-            }
-        }
-    }
-    // Process any remaining data in the buffer
-    if (buffer.trim()) {
-        try {
-            const parsed = JSON.parse(buffer);
-            if(parsed.text) {
-                yield { text: parsed.text };
-            }
-        } catch(e) {
-            console.error("Failed to parse final stream chunk:", buffer, e);
-        }
-    }
-}
+export const sendMessageToAI = (message: string, history: any[]): Promise<{ text: string }> => {
+    return callAPI("sendMessageToAI", { message, history });
+};
 
 export const parseMealPlanText = (text: string): Promise<DailyPlan> => {
     return callAPI("parseMealPlanText", { text });
