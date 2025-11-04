@@ -1,25 +1,14 @@
 
 {
   "functions": {
-    "api/*.ts": {
-      "runtime": "@vercel/node@3.2.3"
+    "api/gemini.ts": {
+      "runtime": "nodejs20.x"
     }
   },
   "routes": [
-    { "src": "/api/sendMessageToAI", "dest": "/api/sendMessageToAI.ts" },
-    { "src": "/api/parseMealPlanText", "dest": "/api/parseMealPlanText.ts" },
-    { "src": "/api/generateDailyPlan", "dest": "/api/generateDailyPlan.ts" },
-    { "src": "/api/regenerateDailyPlan", "dest": "/api/regenerateDailyPlan.ts" },
-    { "src": "/api/adjustDailyPlanForMacro", "dest": "/api/adjustDailyPlanForMacro.ts" },
-    { "src": "/api/generateWeeklyPlan", "dest": "/api/generateWeeklyPlan.ts" },
-    { "src": "/api/regenerateMealFromPrompt", "dest": "/api/regenerateMealFromPrompt.ts" },
-    { "src": "/api/analyzeMealFromText", "dest": "/api/analyzeMealFromText.ts" },
-    { "src": "/api/analyzeMealFromImage", "dest": "/api/analyzeMealFromImage.ts" },
-    { "src": "/api/analyzeProgress", "dest": "/api/analyzeProgress.ts" },
-    { "src": "/api/generateShoppingList", "dest": "/api/generateShoppingList.ts" },
-    { "src": "/api/getFoodInfo", "dest": "/api/getFoodInfo.ts" },
-    { "src": "/api/getFoodSubstitution", "dest": "/api/getFoodSubstitution.ts" },
-    { "src": "/api/generateImageFromPrompt", "dest": "/api/generateImageFromPrompt.ts" },
-    { "src": "/api/findRecipes", "dest": "/api/findRecipes.ts" }
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/gemini.ts"
+    }
   ]
 }
