@@ -1,12 +1,20 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Content, Part, GenerateContentResponse, GenerateImagesResponse } from "@google/genai";
+import { DailyPlan, FoodItem, MacroData, Meal, Recipe, UserData } from '../src/types';
+
+export const config = {
+  runtime: "nodejs20.x",
+};
 
 const API_KEY = process.env.API_KEY;
 
-const ai = new GoogleGenAI({ apiKey: API_KEY as string });
+if (!API_KEY) {
+    throw new Error("API_KEY environment variable is not set.");
+}
+const ai = new GoogleGenAI({ apiKey: API_KEY });
 
-function buildUserProfile(userData: any): string {
+function buildUserProfile(userData: UserData): string {
     return `### Dados do Usuário
 - **Idade:** ${userData.age}, **Gênero:** ${userData.gender}, **Altura:** ${userData.height} cm, **Peso Atual:** ${userData.weight} kg
 - **Nível de Atividade:** ${userData.activityLevel}, **Meta de Peso:** ${userData.weightGoal} kg
@@ -14,19 +22,28 @@ function buildUserProfile(userData: any): string {
 - **Metas Macros:** Calorias: ${userData.macros.calories.goal} kcal, Proteínas: ${userData.macros.protein.goal} g, Carboidratos: ${userData.macros.carbs.goal} g, Gorduras: ${userData.macros.fat.goal} g`;
 }
 
+function safeJsonParse(text: string): any {
+    try {
+        const cleanText = text.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+        return JSON.parse(cleanText);
+    } catch (e) {
+        console.error("Failed to parse JSON from AI response:", text);
+        throw new Error("A IA retornou uma resposta em formato JSON inválido.");
+    }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!API_KEY) {
-        return res.status(500).json({ error: "API_KEY is not configured on the server." });
+        return res.status(500).json({ error: "API_KEY não está configurada no servidor." });
     }
     
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
+        return res.status(405).json({ error: 'Método não permitido' });
     }
 
     try {
         const { action, payload } = req.body;
         
-        // Handle streaming action separately
         if (action === 'sendMessageToAI') {
             const { message, history } = payload;
         
@@ -52,7 +69,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.end();
         }
 
-        // --- All other non-streaming actions ---
         const userProfile = payload.userData ? buildUserProfile(payload.userData) : '';
         const model = 'gemini-2.5-flash';
         let contents: Content | string;
@@ -76,7 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'analyzeMealFromImage': {
                 const { imageDataUrl } = payload;
                 if (!imageDataUrl || typeof imageDataUrl !== 'string') {
-                    return res.status(400).json({ error: "Invalid image data." });
+                    return res.status(400).json({ error: "Dados de imagem inválidos." });
                 }
                 const [header, base64Data] = imageDataUrl.split(',');
                 if (!base64Data) throw new Error('Formato de imagem inválido.');
@@ -89,7 +105,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 break;
             }
 
-            // Text-based JSON responses
             case 'parseMealPlanText':
                 contents = `Converta o seguinte texto de um plano alimentar em um objeto JSON estruturado. Responda APENAS com o JSON.\n\nTexto:\n${payload.text}`;
                 break;
@@ -118,7 +133,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 contents = `Encontre ${payload.numRecipes} receitas com base na busca: "${payload.query}". Para cada receita, forneça um prompt de imagem otimizado para um gerador de imagens. Responda APENAS com o JSON.\n${userProfile}`;
                 break;
 
-            // Plain text responses
             case 'analyzeProgress':
                 isPlainTextResponse = true;
                 contents = `Analise os dados de progresso do usuário e forneça um resumo motivacional com dicas. Fale diretamente com o usuário.\n${userProfile}`;
@@ -143,11 +157,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const response: GenerateContentResponse = await ai.models.generateContent({ model, contents, config });
         
         const text = response.text ?? "";
-        if (!text && !isPlainTextResponse) {
-            throw new Error('A IA retornou uma resposta JSON vazia.');
+        if (!text) {
+            throw new Error('A IA retornou uma resposta vazia.');
         }
         
-        const result = isPlainTextResponse ? text : JSON.parse(text.replace(/^```json\n?/, '').replace(/```$/, ''));
+        const result = isPlainTextResponse ? text : safeJsonParse(text);
 
         if (action === 'generateWeeklyPlan' && Array.isArray(result)) {
             const planRecord: Record<string, any> = {};
@@ -166,7 +180,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!res.headersSent) {
             return res.status(500).json({ error: err.message || 'Ocorreu um erro interno no servidor.' });
         } else {
-            res.end(); // End stream on error
+            res.end();
         }
     }
 }

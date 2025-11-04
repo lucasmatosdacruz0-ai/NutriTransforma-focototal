@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback, FC } from 'react';
-import { View, UserData, UserDataHandlers, Message, DailyPlan, Recipe, RecipesViewState, NotificationState, UpsellModalState, PlanKey, DietDifficulty, MacroData, FoodItem, Meal } from '../types';
+import { View, UserData, UserDataHandlers, Message, DailyPlan, Recipe, RecipesViewState, NotificationState, UpsellModalState, PlanKey, DietDifficulty, MacroData, FoodItem, Meal } from './types';
 import OnboardingFlow from '../components/OnboardingFlow';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
@@ -320,19 +321,6 @@ const App: FC = () => {
         updateUserData({ featuredAchievementId: id });
     }, [updateUserData]);
     
-    // FIX: Removed handler for logging activities
-    // const handleLogActivity = useCallback((newLog: ActivityLog) => {
-    //     if (!userData) return;
-    //     setUserData(prev => {
-    //         if (!prev) return null;
-    //         return {
-    //             ...prev,
-    //             activityLogs: [...prev.activityLogs, newLog],
-    //         };
-    //     });
-    //     addXP(10, 'activity_logged');
-    // }, [userData, addXP]);
-
     // --- TUTORIAL HANDLERS ---
     const startTutorial = useCallback(() => {
         setTutorialState({ isActive: true, stepIndex: 0, isInitialModalOpen: false });
@@ -354,17 +342,16 @@ const App: FC = () => {
         setIsPlanProcessing(true);
         setNotification({ type: 'loading', message: 'Processando com IA...' });
 
-        // Set a timeout to show a more detailed message if it takes too long
         const longRunningTaskTimeout = setTimeout(() => {
             setNotification({ 
                 type: 'loading', 
                 message: 'A IA está analisando seus dados para o melhor resultado. Isso pode levar um momento, é normal!' 
             });
-        }, 4000); // 4 seconds threshold
+        }, 4000);
 
         try {
             const result = await serviceCall();
-            clearTimeout(longRunningTaskTimeout); // Clear the timeout if it finishes quickly
+            clearTimeout(longRunningTaskTimeout);
             onSuccess(result);
             setNotification({ type: 'success', message: 'Seu resultado foi gerado com sucesso!' });
         } catch (e) {
@@ -450,7 +437,7 @@ const App: FC = () => {
 
         await processPlanGeneration(
             () => geminiService.regenerateMealFromPrompt(prompt, mealToRegen, userData),
-            'itemSwaps', // Uses same quota as item swaps
+            'itemSwaps',
             (newMealData: Meal) => {
                 const sanitizedNewMeal = sanitizeMeal(newMealData);
                 if (!sanitizedNewMeal) throw new Error("A IA retornou um formato de refeição inválido.");
@@ -514,12 +501,11 @@ const App: FC = () => {
     
     const handleChatSendMessage = useCallback(async (message: string, featureKey: string = 'chatInteractions') => {
         if(!checkAndIncrementUsage(featureKey)) {
-            // A simple generator that yields nothing and returns
             async function* emptyGenerator() { yield* []; }
             return emptyGenerator();
         }
-        const history = messages.slice(-10); // Pass last 10 messages as history
-        setLastMealPlanText(null); // Reset before new message
+        const history = messages.slice(-10);
+        setLastMealPlanText(null);
         const stream = geminiService.sendMessageToAI(message, history);
         return stream;
     }, [messages, checkAndIncrementUsage]);
@@ -549,7 +535,6 @@ const App: FC = () => {
         return await geminiService.getFoodInfo(question, mealContext);
     }, [checkAndIncrementUsage]);
     
-    // FIX: Define onNewMealPlanText to call importPlanFromChat
     const onNewMealPlanText = useCallback((text: string) => {
         importPlanFromChat(text);
     }, [importPlanFromChat]);
@@ -582,7 +567,6 @@ const App: FC = () => {
         );
     }, []);
 
-    // Other handlers that require full state context
     const handleOnboardingComplete = useCallback((data: Partial<UserData>) => {
         const fullData = {
             ...defaultUserData,
@@ -604,8 +588,6 @@ const App: FC = () => {
         addXP,
         setFeaturedAchievement,
         startTutorial,
-        
-        // Plan generation handlers
         generateWeeklyPlan,
         generateDailyPlan,
         importPlanFromChat,
@@ -615,8 +597,6 @@ const App: FC = () => {
         updateMeal,
         generateShoppingList,
         handleSwapItem,
-
-        // Subscription handler
         handleSubscription,
         openSubscriptionModal: () => setSubscriptionModalOpen(true),
         handleChangeSubscription: (newPlan: PlanKey) => updateUserData({ currentPlan: newPlan }),
@@ -637,17 +617,11 @@ const App: FC = () => {
             setNotification({ type: 'success', message: 'Pacote comprado com sucesso!' });
             setTimeout(() => setNotification(null), 3000);
         },
-
-        // Centralized usage checker/incrementer
         checkAndIncrementUsage,
-
-        // External AI call handlers for usage tracking
         handleChatSendMessage,
         handleAnalyzeMeal,
         handleAnalyzeProgress,
         getFoodInfo,
-        // FIX: Remove handleLogActivity from handlers
-        // handleLogActivity, 
         handleLogin: async () => ({ success: false, message: 'Não implementado.' }),
         handleRegister: async () => ({ success: false, message: 'Não implementado.' }),
         handleLogout: () => {
@@ -692,8 +666,7 @@ const App: FC = () => {
             case 'Admin': return <AdminView userData={userData} handlers={handlers} setActiveView={setActiveView} showNotification={setNotification} />;
             case 'Conquistas': return <AchievementsView userData={userData} handlers={handlers} />;
             case 'Gerenciar Assinatura': return <ManageSubscriptionView userData={userData} handlers={handlers} setActiveView={setActiveView} />;
-            case 'Foco Total': return <FocoTotalView userData={userData} handlers={handlers} />; // New FocoTotalView
-            // FIX: Removed Atividades view case from switch
+            case 'Foco Total': return <FocoTotalView userData={userData} handlers={handlers} />;
             default: return <Dashboard userData={userData} handlers={handlers} setActiveView={setActiveView} mealPlan={mealPlan} />;
         }
     };
@@ -704,7 +677,6 @@ const App: FC = () => {
             <Sidebar activeView={activeView} setActiveView={setActiveView} userData={userData} handlers={handlers} />
             <main className="flex-1 flex flex-col overflow-hidden relative">
                 <div className="flex-1 overflow-y-auto p-4 pb-40 md:p-6 lg:p-8">
-                    {/* FIX: The ErrorBoundary component requires a 'children' prop. Wrapping renderActiveView() inside ErrorBoundary provides this prop and ensures that any rendering errors within the view are caught. */}
                     <ErrorBoundary>
                         {renderActiveView()}
                     </ErrorBoundary>
@@ -713,7 +685,6 @@ const App: FC = () => {
             </main>
             <BottomNav activeView={activeView} setActiveView={setActiveView} />
 
-            {/* Global Modals & Overlays */}
             <FlameOverlay show={showFlame} />
             {shoppingListContent && <ShoppingListModal isOpen={!!shoppingListContent} onClose={() => setShoppingListContent(null)} content={shoppingListContent} />}
             {isSubscriptionModalOpen && <SubscriptionModal isOpen={isSubscriptionModalOpen} onClose={() => setSubscriptionModalOpen(false)} onSubscribe={handleSubscription} theme={themeClass} />}
