@@ -8,7 +8,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/gemini.ts"
+      "dest": "/api/gemini"
     }
   ]
 }
