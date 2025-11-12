@@ -1,4 +1,3 @@
-
 import { DailyPlan, Meal, UserData, MacroData, Recipe, FoodItem } from '../types';
 
 /**

@@ -1,4 +1,3 @@
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Content, Part, GenerateImagesResponse } from "@google/genai";
 
@@ -20,7 +19,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: "Action is required" });
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    // Check if API_KEY is defined
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+        return res.status(500).json({ error: "API key not configured on server" });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
 
     try {
         let result: any;
@@ -150,11 +155,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 break;
 
             case 'generateImageFromPrompt':
-                const imageResponse: GenerateImagesResponse = await ai.models.generateImages({ model: 'imagen-4.0-generate-001', prompt: payload.prompt, config: { numberOfImages: 1, outputMimeType: 'image/jpeg' } });
-                if (!imageResponse.generatedImages || imageResponse.generatedImages.length === 0) {
+                // Check if generatedImages exists and has content before accessing
+                const imageResponse: GenerateImagesResponse = await ai.models.generateImages({ 
+                    model: 'imagen-4.0-generate-001', 
+                    prompt: payload.prompt, 
+                    config: { numberOfImages: 1, outputMimeType: 'image/jpeg' } 
+                });
+                
+                // Safely access generatedImages with optional chaining and nullish coalescing
+                const generatedImage = imageResponse.generatedImages?.[0];
+                if (!generatedImage) {
                     throw new Error("A IA não conseguiu gerar uma imagem.");
                 }
-                result = imageResponse.generatedImages[0].image.imageBytes;
+                
+                // Safely access nested image properties
+                const imageBytes = generatedImage.image?.imageBytes;
+                if (!imageBytes) {
+                    throw new Error("A imagem gerada não contém dados.");
+                }
+                
+                result = imageBytes;
                 break;
 
             case 'findRecipes':
