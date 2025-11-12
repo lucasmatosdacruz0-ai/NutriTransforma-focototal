@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Message, UserData, UserDataHandlers } from '../types';
 import { BowlIcon, UserIcon, SendIcon, TrashIcon, ClipboardIcon, CheckIcon, SparklesIcon, ChevronDownIcon } from './icons';
@@ -92,51 +91,24 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
         setIsLoading(true);
 
         try {
-            const stream = await handlers.handleChatSendMessage(prompt, featureKey);
-            let botResponse = '';
-            let firstChunk = true;
-
-            for await (const chunk of stream) {
-                const chunkText = chunk.text;
-                botResponse += chunkText;
-                
-                if (firstChunk) {
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        const lastMessage = newMessages[newMessages.length - 1];
-                        if (lastMessage?.sender === 'bot' && (lastMessage as any).type === 'thinking') {
-                           lastMessage.text = botResponse;
-                           delete (lastMessage as any).type;
-                           lastMessage.isStreaming = true;
-                        }
-                        return newMessages;
-                    });
-                    firstChunk = false;
-                } else {
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        const lastMessage = newMessages[newMessages.length - 1];
-                        if (lastMessage?.sender === 'bot') {
-                            lastMessage.text = botResponse;
-                        }
-                        return newMessages;
-                    });
+            const response = await handlers.handleChatSendMessage(prompt, featureKey);
+            const botResponse = response.text;
+            
+            setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage?.sender === 'bot' && (lastMessage as any).type === 'thinking') {
+                   lastMessage.text = botResponse;
+                   delete (lastMessage as any).type;
+                   lastMessage.isStreaming = false;
                 }
-            }
+                return newMessages;
+            });
             
             const botResponseLower = botResponse.toLowerCase();
             if ((botResponseLower.includes('plano alimentar') || botResponseLower.includes('dieta')) && botResponse.includes('|')) {
                 onNewMealPlanText(botResponse);
             }
-
-            setMessages(prev => {
-                const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
-                if (lastMessage?.sender === 'bot') {
-                    lastMessage.isStreaming = false;
-                }
-                return newMessages;
-            });
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
             setMessages(prev => {
