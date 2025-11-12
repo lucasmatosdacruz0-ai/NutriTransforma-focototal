@@ -6,7 +6,7 @@ import { DailyPlan, Meal, UserData, MacroData, Recipe, FoodItem } from '../types
  */
 async function callAPI<T>(action: string, payload: object): Promise<T> {
   try {
-    const res = await fetch('/api/gemini', {
+    const res = await fetch('/api', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, payload }),
