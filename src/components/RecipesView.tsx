@@ -128,7 +128,7 @@ const RecipesView: React.FC<RecipesViewProps> = ({ userData, favoriteRecipes, on
                  handlers.updateUserData({ imagesGeneratedCount: (userData.imagesGeneratedCount || 0) + 1 });
             // }
 
-            const isFavorite = favoriteRecipes.some(r => r.id === selectedRecipe.id);
+            const isFavorite = (favoriteRecipes || []).some(r => r.id === selectedRecipe.id);
             if(isFavorite) {
                 const updatedRecipe = { ...selectedRecipe, generatedImage: imageUrl };
                 onToggleFavorite(updatedRecipe); // This implicitly updates the favorite
@@ -211,7 +211,7 @@ const RecipesView: React.FC<RecipesViewProps> = ({ userData, favoriteRecipes, on
     
         currentY += 40; // 'Ingredientes' title
         const ingredientLines: string[][] = [];
-        selectedRecipe.ingredients.forEach(ing => {
+        (selectedRecipe.ingredients || []).forEach(ing => {
             const lines = measureAndWrapText(`• ${ing}`, `22px ${FONT_FAMILY}`, CANVAS_WIDTH - 2 * PADDING);
             ingredientLines.push(lines);
             currentY += lines.length * 28;
@@ -220,7 +220,7 @@ const RecipesView: React.FC<RecipesViewProps> = ({ userData, favoriteRecipes, on
     
         currentY += 40; // 'Modo de Preparo' title
         const instructionLines: string[][] = [];
-        selectedRecipe.instructions.forEach((inst, i) => {
+        (selectedRecipe.instructions || []).forEach((inst, i) => {
             const lines = measureAndWrapText(`${i + 1}. ${inst}`, `22px ${FONT_FAMILY}`, CANVAS_WIDTH - 2 * PADDING);
             instructionLines.push(lines);
             currentY += lines.length * 30;
@@ -366,7 +366,7 @@ const RecipesView: React.FC<RecipesViewProps> = ({ userData, favoriteRecipes, on
     };
 
     const recipeUses = getRemainingUses('recipeSearches');
-    const imageGenUses = getRemainingUses('imageGen'); // FIX: Get imageGen uses here
+    const imageGenUses = getRemainingUses('imageGen');
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
@@ -451,12 +451,12 @@ const RecipesView: React.FC<RecipesViewProps> = ({ userData, favoriteRecipes, on
                             <p>{error}</p>
                         </div>
                     )}
-                    {!isLoading && !error && recipes.length > 0 && (
+                    {!isLoading && !error && (recipes || []).length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {recipes.map(recipe => <RecipeCard key={recipe.id} recipe={recipe} isFavorite={favoriteRecipes.some(r => r.id === recipe.id)} />)}
+                            {(recipes || []).map(recipe => <RecipeCard key={recipe.id} recipe={recipe} isFavorite={(favoriteRecipes || []).some(r => r.id === recipe.id)} />)}
                         </div>
                     )}
-                    {!isLoading && !error && recipes.length === 0 && (
+                    {!isLoading && !error && (recipes || []).length === 0 && (
                         <div className="text-center text-slate-400 p-10 bg-white rounded-2xl border border-gray-100">
                             <BookOpenIcon className="w-16 h-16 mx-auto mb-4" />
                             <p className="font-semibold">As receitas encontradas aparecerão aqui</p>
@@ -469,9 +469,9 @@ const RecipesView: React.FC<RecipesViewProps> = ({ userData, favoriteRecipes, on
 
             {activeTab === 'favorites' && (
                  <div className="min-h-[400px]">
-                    {favoriteRecipes.length > 0 ? (
+                    {(favoriteRecipes || []).length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                             {favoriteRecipes.map(recipe => <RecipeCard key={recipe.id} recipe={recipe} isFavorite />)}
+                             {(favoriteRecipes || []).map(recipe => <RecipeCard key={recipe.id} recipe={recipe} isFavorite />)}
                         </div>
                     ) : (
                         <div className="text-center text-slate-400 p-10 bg-white rounded-2xl border border-gray-100">
@@ -488,7 +488,7 @@ const RecipesView: React.FC<RecipesViewProps> = ({ userData, favoriteRecipes, on
                 <Modal isOpen={!!selectedRecipe} onClose={() => setSelectedRecipe(null)} title={selectedRecipe.title} size="4xl">
                     <div className="absolute top-[0.875rem] right-16 z-10">
                          <button onClick={handleFavoriteClick} className="p-2 rounded-full hover:bg-yellow-100 transition-colors" aria-label="Favoritar receita">
-                            <StarIcon className={`w-6 h-6 ${favoriteRecipes.some(r => r.id === selectedRecipe.id) ? 'text-yellow-400 fill-current' : 'text-gray-400'}`} />
+                            <StarIcon className={`w-6 h-6 ${(favoriteRecipes || []).some(r => r.id === selectedRecipe.id) ? 'text-yellow-400 fill-current' : 'text-gray-400'}`} />
                         </button>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -514,7 +514,7 @@ const RecipesView: React.FC<RecipesViewProps> = ({ userData, favoriteRecipes, on
                                         <button onClick={handleGenerateImage} className="bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 text-sm transition-colors">
                                            <SparklesIcon className="w-4 h-4"/> Gerar imagem com IA
                                         </button>
-                                        {imageGenUses.limit !== Infinity && ( // FIX: Use imageGenUses here
+                                        {imageGenUses.limit !== Infinity && (
                                             <p className="text-xs text-slate-400 mt-2">
                                                 Gerações de imagem restantes: <strong>{imageGenUses.remaining} / {imageGenUses.limit}</strong>
                                             </p>
@@ -542,13 +542,13 @@ const RecipesView: React.FC<RecipesViewProps> = ({ userData, favoriteRecipes, on
                                 <div>
                                     <h3 className="font-bold text-slate-800 text-lg mb-3">Ingredientes</h3>
                                     <ul className="space-y-1.5 text-slate-600 list-disc list-inside">
-                                        {selectedRecipe.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
+                                        {(selectedRecipe.ingredients || []).map((ing, i) => <li key={i}>{ing}</li>)}
                                     </ul>
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-slate-800 text-lg mb-3">Modo de Preparo</h3>
                                     <ol className="space-y-2 text-slate-600 list-decimal list-inside">
-                                        {selectedRecipe.instructions.map((inst, i) => <li key={i}>{inst}</li>)}
+                                        {(selectedRecipe.instructions || []).map((inst, i) => <li key={i}>{inst}</li>)}
                                     </ol>
                                 </div>
                              </div>

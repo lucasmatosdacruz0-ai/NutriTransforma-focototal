@@ -223,7 +223,7 @@ const MealCard: FC<MealCardProps> = (props) => {
                 </div>
 
                 <ul className="space-y-2 text-sm">
-                    {meal.items.map((item, index) => (
+                    {(meal.items || []).map((item, index) => (
                         <li key={index} className="flex justify-between items-center group">
                             <div>
                                 <p className="text-slate-700 font-medium">{item.name}</p>

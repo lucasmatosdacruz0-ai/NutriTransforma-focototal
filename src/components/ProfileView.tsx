@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useMemo, FC } from 'react';
 import { UserData, UserDataHandlers, Gender, ActivityLevel, View, UserMacros } from '../types';
 import { UserIcon, EditIcon, LogoutIcon, MailIcon, InstagramIcon, PhoneIcon, TargetIcon, UtensilsIcon, QuestionMarkCircleIcon, ChevronRightIcon, SparklesIcon } from './icons';
@@ -307,7 +305,7 @@ const ProfileView: FC<ProfileViewProps> = ({ userData, handlers, setActiveView }
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-2">
                             {DIETS.map(diet => (
                                 <label key={diet} className={`flex items-center space-x-2 text-sm ${isPreferencesEditing ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'}`}>
-                                    <input type="checkbox" disabled={!isPreferencesEditing} checked={isPreferencesEditing ? formData.dietaryPreferences?.diets.includes(diet) : userData.dietaryPreferences.diets.includes(diet)} onChange={() => handlePreferenceChange('diets', diet)} className="w-4 h-4 rounded text-brand-green focus:ring-brand-green/50 disabled:bg-gray-200" />
+                                    <input type="checkbox" disabled={!isPreferencesEditing} checked={isPreferencesEditing ? (formData.dietaryPreferences?.diets || []).includes(diet) : (userData.dietaryPreferences.diets || []).includes(diet)} onChange={() => handlePreferenceChange('diets', diet)} className="w-4 h-4 rounded text-brand-green focus:ring-brand-green/50 disabled:bg-gray-200" />
                                     <span className="text-slate-700">{diet}</span>
                                 </label>
                             ))}
@@ -318,7 +316,7 @@ const ProfileView: FC<ProfileViewProps> = ({ userData, handlers, setActiveView }
                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-2">
                             {RESTRICTIONS.map(r => (
                                 <label key={r} className={`flex items-center space-x-2 text-sm ${isPreferencesEditing ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'}`}>
-                                    <input type="checkbox" disabled={!isPreferencesEditing} checked={isPreferencesEditing ? formData.dietaryPreferences?.restrictions.includes(r) : userData.dietaryPreferences.restrictions.includes(r)} onChange={() => handlePreferenceChange('restrictions', r)} className="w-4 h-4 rounded text-brand-green focus:ring-brand-green/50 disabled:bg-gray-200"/>
+                                    <input type="checkbox" disabled={!isPreferencesEditing} checked={isPreferencesEditing ? (formData.dietaryPreferences?.restrictions || []).includes(r) : (userData.dietaryPreferences.restrictions || []).includes(r)} onChange={() => handlePreferenceChange('restrictions', r)} className="w-4 h-4 rounded text-brand-green focus:ring-brand-green/50 disabled:bg-gray-200"/>
                                     <span className="text-slate-700">{r}</span>
                                 </label>
                             ))}

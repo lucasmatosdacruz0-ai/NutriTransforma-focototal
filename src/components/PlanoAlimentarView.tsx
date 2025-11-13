@@ -178,7 +178,7 @@ const DayCard: FC<{ dailyPlan: DailyPlan | undefined, onSelect: () => void }> = 
                 </div>
 
                 <ul className="space-y-1 text-xs text-slate-500 mt-2">
-                    {meals.slice(0, 3).map(meal => (
+                    {(meals || []).slice(0, 3).map(meal => (
                         <li key={meal.id} className="flex justify-between items-center gap-2">
                            <span className="truncate" title={meal.name}>{meal.name}</span>
                            <span className="font-medium text-slate-500 whitespace-nowrap">{meal.totalCalories}</span>
@@ -398,7 +398,7 @@ const DailyView: FC<DailyViewProps> = (props) => {
     };
     
     const handleTimeUpdate = (mealId: string, newTime: string) => {
-        const mealToUpdate = dailyPlan.meals.find(m => m.id === mealId);
+        const mealToUpdate = (dailyPlan.meals || []).find(m => m.id === mealId);
         if (mealToUpdate) {
             handlers.updateMeal(dailyPlan.date, { ...mealToUpdate, time: newTime });
         }
@@ -434,7 +434,7 @@ const DailyView: FC<DailyViewProps> = (props) => {
     };
     
     const isToday = useMemo(() => isSameDay(new Date(dailyPlan.date + 'T12:00:00'), new Date()), [dailyPlan.date]);
-    const isTodayCompleted = useMemo(() => userData.completedDays.includes(dailyPlan.date), [userData.completedDays, dailyPlan.date]);
+    const isTodayCompleted = useMemo(() => (userData.completedDays || []).includes(dailyPlan.date), [userData.completedDays, dailyPlan.date]);
     
     return (
          <div className="max-w-4xl mx-auto">
@@ -635,7 +635,7 @@ const PlanoAlimentarView: React.FC<PlanoAlimentarViewProps> = ({ userData, handl
             const timeout = reminderDate.getTime() - now.getTime();
             return setTimeout(() => {
                 new Notification(`Hora do seu ${meal.name}! 🍽️`, {
-                    body: `Está na hora de comer: ${meal.items.map(i => i.name).join(', ')}.`,
+                    body: `Está na hora de comer: ${(meal.items || []).map(i => i.name).join(', ')}.`,
                     icon: '/favicon.svg'
                 });
             }, timeout);
@@ -714,6 +714,11 @@ const handleExportDiet = (plan: DailyPlan) => {
     >
       <ChatIcon className="w-5 h-5" />
       {isPlanProcessing ? 'Processando...' : 'Importar do Chat'}
+      {(() => {
+          const uses = getRemainingUses(userData, 'chatImports');
+          if (uses.limit === Infinity) return null;
+          return <span className="text-xs font-normal text-white/70">({uses.remaining}/{uses.limit})</span>;
+      })()}
     </button>
   );
 
@@ -894,7 +899,7 @@ const handleExportDiet = (plan: DailyPlan) => {
                    <DailyView 
                       dailyPlan={dailyData} 
                       onBackToWeeklyView={() => setView('semanal')}
-                      isFavorite={favoritePlans.some(p => p.date === dailyData.date)}
+                      isFavorite={(favoritePlans || []).some(p => p.date === dailyData.date)}
                       onToggleFavorite={() => onToggleFavorite(dailyData)}
                       userData={userData}
                       handlers={handlers}

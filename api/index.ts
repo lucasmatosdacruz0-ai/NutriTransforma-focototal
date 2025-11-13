@@ -14,6 +14,39 @@ function buildUserProfile(userData: any): string {
 ${adminPrompt}`;
 }
 
+/**
+ * Recursively sanitizes objects, ensuring that known array fields are never null, 
+ * replacing them with an empty array if null or undefined.
+ */
+function deepSanitizeArrays(obj: any): any {
+    if (typeof obj !== 'object' || obj === null) {
+        return obj;
+    }
+
+    if (Array.isArray(obj)) {
+        return obj.map(deepSanitizeArrays);
+    }
+
+    const sanitized: any = {};
+    const arrayKeys = ['meals', 'items', 'ingredients', 'instructions', 'recipes', 'weightHistory', 'completedDays', 'achievements', 'diets', 'restrictions', 'times', 'modificationHistory'];
+
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            const value = obj[key];
+            
+            if (arrayKeys.includes(key)) {
+                sanitized[key] = Array.isArray(value) ? value.map(deepSanitizeArrays) : [];
+            } else if (typeof value === 'object' && value !== null) {
+                sanitized[key] = deepSanitizeArrays(value);
+            } else {
+                sanitized[key] = value;
+            }
+        }
+    }
+    return sanitized;
+}
+
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -46,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         cleanedText = cleanedText.replace(/`/g, '').trim();
         
         try {
-            return JSON.parse(cleanedText);
+            return deepSanitizeArrays(JSON.parse(cleanedText));
         } catch (e) {
             console.error("Failed to parse JSON:", cleanedText, e);
             throw new Error("A IA retornou um formato JSON inválido ou incompleto.");

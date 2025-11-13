@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import Modal from './Modal';
 import { MacroData, UserData, UserDataHandlers, DailyPlan, Meal } from '../types';
@@ -297,9 +296,9 @@ const LogMealModal: React.FC<LogMealModalProps> = ({ onClose, onLogMeal, handler
                                 <h4 className="block text-sm font-medium text-slate-700 mb-3">
                                     Selecione uma refeição do seu plano de hoje:
                                 </h4>
-                                {dailyPlanToday && dailyPlanToday.meals.length > 0 ? (
+                                {dailyPlanToday && (dailyPlanToday.meals || []).length > 0 ? (
                                     <div className="space-y-3">
-                                        {dailyPlanToday.meals.map((meal) => (
+                                        {(dailyPlanToday.meals || []).map((meal) => (
                                             <div
                                                 key={meal.id}
                                                 className="bg-slate-50 p-3 rounded-lg border border-gray-200 flex flex-col cursor-pointer"
@@ -327,7 +326,7 @@ const LogMealModal: React.FC<LogMealModalProps> = ({ onClose, onLogMeal, handler
                                                 </div>
                                                 {expandedMealId === meal.id && (
                                                     <ul id={`meal-items-${meal.id}`} className="mt-3 pt-3 border-t border-gray-200 space-y-1 text-sm text-slate-600">
-                                                        {meal.items.map((item, itemIndex) => (
+                                                        {(meal.items || []).map((item, itemIndex) => (
                                                             <li key={itemIndex} className="flex justify-between">
                                                                 <span>{item.name} <span className="text-slate-400">({item.portion})</span></span>
                                                                 <span className="font-medium">{item.calories} kcal</span>
