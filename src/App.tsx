@@ -497,10 +497,9 @@ const App: FC = () => {
         );
     }, []);
     
-    // FIX: Updated handleChatSendMessage to return Promise<{ text: string }> (non-streaming)
     const handleChatSendMessage = useCallback(async (message: string, featureKey: string = 'chatInteractions') => {
         if(!checkAndIncrementUsage(featureKey)) {
-            // If usage check fails, return a dummy object with an empty text property
+            // Return a dummy object if usage check fails
             return { text: "" };
         }
         const history = messages.slice(-10);
@@ -508,7 +507,7 @@ const App: FC = () => {
         
         // Call the non-streaming service function
         const response = await geminiService.sendMessageToAI(message, history);
-        return response; // Returns { text: string }
+        return response;
     }, [messages, checkAndIncrementUsage]);
 
     const handleAnalyzeMeal = useCallback(async (data: { description?: string; imageDataUrl?: string }) => {

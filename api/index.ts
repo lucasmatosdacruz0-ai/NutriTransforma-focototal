@@ -74,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (!response?.text) {
                     throw new Error("A IA retornou uma resposta vazia.");
                 }
-                // Return the text directly, wrapped in an object for consistency with callAPI
+                // Return the text directly, wrapped in an object for consistency with client
                 result = { text: response.text }; 
                 break;
 
@@ -86,7 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 break;
 
             case 'generateDailyPlan':
-                // FIX: Added explicit instruction to return JSON only and use the correct format
+                // FIX: Ensure the prompt explicitly asks for the DailyPlan structure and uses the user profile
                 prompt = `Com base no perfil do usuário, gere um plano alimentar completo para a data ${payload.dateString}. O plano deve ser detalhado, alinhado com as metas. Calcule os totais de calorias e macros para cada refeição e para o dia todo. Responda APENAS com o JSON no formato DailyPlan. \n${buildUserProfile(payload.userData)}`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
