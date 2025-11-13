@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, FC } from 'react';
 import { View, UserData, UserDataHandlers, Message, DailyPlan, Recipe, RecipesViewState, NotificationState, UpsellModalState, PlanKey, DietDifficulty, MacroData, FoodItem, Meal } from './types';
 import OnboardingFlow from '../components/OnboardingFlow';
@@ -23,10 +22,9 @@ import ShoppingListModal from '../components/ShoppingListModal';
 import FlameOverlay from '../components/FlameOverlay';
 import Tutorial from '../components/Tutorial';
 import StartTutorialModal from '../components/StartTutorialModal';
-import FocoTotalView from '../components/FocoTotalView'; // Import the new FocoTotalView
+import FocoTotalView from '../components/FocoTotalView';
 
 
-// FIX: Import missing icons for FAB
 import { CalendarIcon } from '../components/icons/CalendarIcon';
 import { HomeIcon } from '../components/icons/HomeIcon';
 
@@ -501,13 +499,13 @@ const App: FC = () => {
     
     const handleChatSendMessage = useCallback(async (message: string, featureKey: string = 'chatInteractions') => {
         if(!checkAndIncrementUsage(featureKey)) {
-            async function* emptyGenerator() { yield* []; }
-            return emptyGenerator();
+            // If usage check fails, return a dummy object with an empty text property
+            return { text: "" };
         }
         const history = messages.slice(-10);
         setLastMealPlanText(null);
-        const stream = geminiService.sendMessageToAI(message, history);
-        return stream;
+        const response = await geminiService.sendMessageToAI(message, history);
+        return response; // Now returns { text: string } directly
     }, [messages, checkAndIncrementUsage]);
 
     const handleAnalyzeMeal = useCallback(async (data: { description?: string; imageDataUrl?: string }) => {

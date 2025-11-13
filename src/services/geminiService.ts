@@ -31,8 +31,9 @@ async function callAPI<T>(action: string, payload: object): Promise<T> {
 
 /**
  * Sends a message to the AI and gets a single, complete response.
+ * Updated to return a Promise<{ text: string }> instead of an AsyncGenerator.
  */
-export const sendMessageToAI = (message: string, history: any[]): Promise<{ text: string }> => {
+export const sendMessageToAI = async (message: string, history: any[]): Promise<{ text: string }> => {
     return callAPI("sendMessageToAI", { message, history });
 };
 
