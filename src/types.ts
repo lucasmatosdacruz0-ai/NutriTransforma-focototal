@@ -188,7 +188,6 @@ export interface UserDataHandlers {
     checkAndIncrementUsage: (featureKey: string, amount?: number) => boolean;
 
     // External AI call handlers for usage tracking
-    // FIX: Update handleChatSendMessage to return Promise<{ text: string }> (non-streaming)
     handleChatSendMessage: (message: string, featureKey?: string) => Promise<{ text: string }>;
     handleAnalyzeMeal: (data: { description?: string; imageDataUrl?: string }) => Promise<MacroData>;
     handleAnalyzeProgress: () => Promise<string>;

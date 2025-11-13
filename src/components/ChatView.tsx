@@ -79,14 +79,12 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
         });
     };
 
-    // FIX: Refactored to handle non-streaming response
     const sendPrompt = async (prompt: string, isButtonAction: boolean = false, featureKey?: string) => {
         if (isLoading) return;
 
         const userMessageText = isButtonAction ? `*Ação solicitada: ${prompt.split('\n')[0]}*` : prompt;
         const userMessage: Message = { sender: 'user', text: userMessageText };
         
-        // Use a temporary 'thinking' message while waiting for the full response
         const thinkingMessage: Message & {type: 'thinking'} = { sender: 'bot', text: 'NutriBot está pensando...', type: 'thinking' };
 
         setMessages(prev => [...prev, userMessage, thinkingMessage]);
@@ -96,10 +94,8 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
         setIsLoading(true);
 
         try {
-            // FIX: Call the handler and await the full response object { text: string }
-            // Note: handlers.handleChatSendMessage is typed as returning AsyncGenerator for compatibility, 
-            // but the implementation in App.tsx returns Promise<{ text: string }>.
-            const response = await handlers.handleChatSendMessage(prompt, featureKey) as unknown as { text: string };
+            // Call the handler and await the full response object { text: string }
+            const response = await handlers.handleChatSendMessage(prompt, featureKey);
             const botResponse = response.text;
 
             if (!botResponse) {

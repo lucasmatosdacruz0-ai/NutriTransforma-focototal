@@ -497,7 +497,7 @@ const App: FC = () => {
         );
     }, []);
     
-    // FIX: Updated handleChatSendMessage to handle the non-streaming response object { text: string }
+    // FIX: Updated handleChatSendMessage to return Promise<{ text: string }> (non-streaming)
     const handleChatSendMessage = useCallback(async (message: string, featureKey: string = 'chatInteractions') => {
         if(!checkAndIncrementUsage(featureKey)) {
             // If usage check fails, return a dummy object with an empty text property
@@ -506,7 +506,7 @@ const App: FC = () => {
         const history = messages.slice(-10);
         setLastMealPlanText(null);
         
-        // FIX: Call the non-streaming service function
+        // Call the non-streaming service function
         const response = await geminiService.sendMessageToAI(message, history);
         return response; // Returns { text: string }
     }, [messages, checkAndIncrementUsage]);
@@ -628,8 +628,7 @@ const App: FC = () => {
         checkAndIncrementUsage,
 
         // External AI call handlers for usage tracking
-        // FIX: Casting the non-streaming implementation to the expected AsyncGenerator type for compatibility with ChatView
-        handleChatSendMessage: handleChatSendMessage as unknown as (message: string, featureKey?: string) => Promise<AsyncGenerator<{ text: string }>>,
+        handleChatSendMessage,
         handleAnalyzeMeal,
         handleAnalyzeProgress,
         getFoodInfo,

@@ -6,7 +6,7 @@ import { DailyPlan, Meal, UserData, MacroData, Recipe, FoodItem } from '../types
  */
 async function callAPI<T>(action: string, payload: object): Promise<T> {
   try {
-    // FIX: Use the unified /api endpoint
+    // Use the unified /api endpoint
     const res = await fetch('/api', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -40,7 +40,6 @@ async function callAPI<T>(action: string, payload: object): Promise<T> {
 
 /**
  * Sends a message to the AI and gets a single, complete response.
- * FIX: Returns Promise<{ text: string }> (non-streaming).
  */
 export const sendMessageToAI = async (message: string, history: any[]): Promise<{ text: string }> => {
     return callAPI<{ text: string }>("sendMessageToAI", { message, history });
