@@ -6,6 +6,7 @@ import { DailyPlan, Meal, UserData, MacroData, Recipe, FoodItem } from '../types
  */
 async function callAPI<T>(action: string, payload: object): Promise<T> {
   try {
+    // FIX: Use the unified /api endpoint
     const res = await fetch('/api', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -13,7 +14,15 @@ async function callAPI<T>(action: string, payload: object): Promise<T> {
     });
 
     if (!res.ok) {
-        const errorBody = await res.json().catch(() => ({ error: 'API Error: Failed to parse error response' }));
+        let errorBody;
+        try {
+            // Try to parse JSON error response
+            errorBody = await res.json();
+        } catch {
+            // If parsing fails (e.g., 404 HTML), use status text
+            errorBody = { error: `API Error: ${res.status} ${res.statusText}. Check server logs.` };
+        }
+        
         console.error(`API Error for ${action}:`, errorBody);
         throw new Error(errorBody.error || `API Error: ${res.status}`);
     }
@@ -31,10 +40,10 @@ async function callAPI<T>(action: string, payload: object): Promise<T> {
 
 /**
  * Sends a message to the AI and gets a single, complete response.
- * Updated to return a Promise<{ text: string }> instead of an AsyncGenerator.
+ * FIX: Returns Promise<{ text: string }> (non-streaming).
  */
 export const sendMessageToAI = async (message: string, history: any[]): Promise<{ text: string }> => {
-    return callAPI("sendMessageToAI", { message, history });
+    return callAPI<{ text: string }>("sendMessageToAI", { message, history });
 };
 
 export const parseMealPlanText = (text: string): Promise<DailyPlan> => {

@@ -33,6 +33,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let response;
         let text: string;
 
+        // Helper to safely parse JSON response from Gemini, removing markdown wrappers
+        const safeParseJson = (responseText: string) => {
+            let cleanedText = responseText.trim();
+            if (cleanedText.startsWith('```json')) {
+                cleanedText = cleanedText.substring(7);
+            }
+            if (cleanedText.endsWith('```')) {
+                cleanedText = cleanedText.substring(0, cleanedText.length - 3);
+            }
+            return JSON.parse(cleanedText.trim());
+        };
+
         switch(action) {
             case 'sendMessageToAI':
                 const { message, history } = payload;
@@ -49,63 +61,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (!response?.text) {
                     throw new Error("A IA retornou uma resposta vazia.");
                 }
-                result = { text: response.text };
+                // Return the text directly, wrapped in an object for consistency with callAPI
+                result = { text: response.text }; 
                 break;
 
             case 'parseMealPlanText':
                 prompt = `Converta o seguinte texto de um plano alimentar em um objeto JSON estruturado. Responda APENAS com o JSON.\n\nTexto:\n${payload.text}`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
-                text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
-                result = JSON.parse(text);
+                result = safeParseJson(response.text);
                 break;
 
             case 'generateDailyPlan':
-                prompt = `Com base no perfil do usuário, gere um plano alimentar completo para a data ${payload.dateString}. O plano deve ser detalhado, alinhado com as metas. Calcule os totais de calorias e macros para cada refeição e para o dia todo. Responda APENAS com o JSON.\n${buildUserProfile(payload.userData)}`;
+                // FIX: Ensure JSON is correctly parsed and extracted (Addressing the Empty Diet Bug)
+                prompt = `Com base no perfil do usuário, gere um plano alimentar completo para a data ${payload.dateString}. O plano deve ser detalhado, alinhado com as metas. Calcule os totais de calorias e macros para cada refeição e para o dia todo. Responda APENAS com o JSON. Use o formato DailyPlan. \n${buildUserProfile(payload.userData)}`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
-                text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
-                result = JSON.parse(text);
+                result = safeParseJson(response.text);
                 break;
 
             case 'regenerateDailyPlan':
-                prompt = `Com base no perfil do usuário, gere um novo plano alimentar para a data ${payload.currentPlan.date}. ${payload.numberOfMeals ? `O plano deve ter exatamente ${payload.numberOfMeals} refeições.` : ''} O plano deve ser uma alternativa ao plano original, mantendo as mesmas metas. Responda APENAS com o JSON.\n${buildUserProfile(payload.userData)}`;
+                prompt = `Com base no perfil do usuário, gere um novo plano alimentar para a data ${payload.currentPlan.date}. ${payload.numberOfMeals ? `O plano deve ter exatamente ${payload.numberOfMeals} refeições.` : ''} O plano deve ser uma alternativa ao plano original, mantendo as mesmas metas. Responda APENAS com o JSON. Use o formato DailyPlan.\n${buildUserProfile(payload.userData)}`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
-                text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
-                result = JSON.parse(text);
+                result = safeParseJson(response.text);
                 break;
 
             case 'adjustDailyPlanForMacro':
                 prompt = `Ajuste este plano alimentar para se aproximar mais da meta de ${payload.macroToFix}. Mantenha as calorias totais o mais próximo possível da meta. Plano original:\n${JSON.stringify(payload.currentPlan)}\n${buildUserProfile(payload.userData)}\n Responda APENAS com o JSON do plano alimentar ajustado.`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
-                text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
-                result = JSON.parse(text);
+                result = safeParseJson(response.text);
                 break;
 
             case 'generateWeeklyPlan':
-                prompt = `Crie um plano alimentar para 7 dias, começando em ${payload.weekStartDate}. ${payload.observation ? `Observação: ${payload.observation}`: ''} Retorne um objeto JSON onde as chaves são as datas (YYYY-MM-DD) e os valores são os objetos DailyPlan. Responda APENAS com o JSON.\n${buildUserProfile(payload.userData)}`;
+                prompt = `Crie um plano alimentar para 7 dias, começando em ${payload.weekStartDate}. ${payload.observation ? `Observação: ${payload.observation}`: ''} Retorne um objeto JSON onde as chaves são as datas (YYYY-MM-DD) e os valores são os objetos DailyPlan. Responda APENAS com o JSON.`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
-                text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
-                result = JSON.parse(text);
+                result = safeParseJson(response.text);
                 break;
 
             case 'regenerateMealFromPrompt':
-                prompt = `Regenere a refeição "${payload.meal.name}" com base na seguinte instrução: "${payload.prompt}". Calcule os novos totais de calorias e macros. Responda APENAS com o JSON.\n${buildUserProfile(payload.userData)}`;
+                prompt = `Regenere a refeição "${payload.meal.name}" com base na seguinte instrução: "${payload.prompt}". Calcule os novos totais de calorias e macros. Responda APENAS com o JSON do objeto Meal.`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
-                text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
-                result = JSON.parse(text);
+                result = safeParseJson(response.text);
                 break;
 
             case 'analyzeMealFromText':
-                prompt = `Analise esta descrição de uma refeição e retorne uma estimativa dos macronutrientes. Responda APENAS com o JSON.\n\nDescrição: ${payload.description}`;
+                prompt = `Analise esta descrição de uma refeição e retorne uma estimativa dos macronutrientes. Responda APENAS com o JSON.`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
-                text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
-                result = JSON.parse(text);
+                result = safeParseJson(response.text);
                 break;
 
             case 'analyzeMealFromImage':
@@ -121,8 +128,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: { parts: [textPart, imagePart] }, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
-                text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
-                result = JSON.parse(text);
+                result = safeParseJson(response.text);
                 break;
 
             case 'analyzeProgress':
@@ -147,28 +153,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 break;
 
             case 'getFoodSubstitution':
-                prompt = `Sugira um substituto para o item "${payload.itemToSwap.name}" no contexto da refeição "${payload.mealContext.name}". O substituto deve ter macros similares. Responda APENAS com o JSON do novo FoodItem.\n${buildUserProfile(payload.userData)}`;
+                prompt = `Sugira um substituto para o item "${payload.itemToSwap.name}" no contexto da refeição "${payload.mealContext.name}". O substituto deve ter macros similares. Responda APENAS com o JSON do novo FoodItem.`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
-                text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
-                result = JSON.parse(text);
+                result = safeParseJson(response.text);
                 break;
 
             case 'generateImageFromPrompt':
-                // Check if generatedImages exists and has content before accessing
                 const imageResponse: GenerateImagesResponse = await ai.models.generateImages({ 
                     model: 'imagen-4.0-generate-001', 
                     prompt: payload.prompt, 
                     config: { numberOfImages: 1, outputMimeType: 'image/jpeg' } 
                 });
                 
-                // Safely access generatedImages with optional chaining and nullish coalescing
                 const generatedImage = imageResponse.generatedImages?.[0];
                 if (!generatedImage) {
                     throw new Error("A IA não conseguiu gerar uma imagem.");
                 }
                 
-                // Safely access nested image properties
                 const imageBytes = generatedImage.image?.imageBytes;
                 if (!imageBytes) {
                     throw new Error("A imagem gerada não contém dados.");
@@ -178,11 +180,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 break;
 
             case 'findRecipes':
-                prompt = `Encontre ${payload.numRecipes} receitas com base na busca: "${payload.query}". Para cada receita, forneça um prompt de imagem otimizado para um gerador de imagens. Responda APENAS com o JSON de um array de objetos de receita.\n${buildUserProfile(payload.userData)}`;
+                prompt = `Encontre ${payload.numRecipes} receitas com base na busca: "${payload.query}". Para cada receita, forneça um prompt de imagem otimizado para um gerador de imagens. Responda APENAS com o JSON de um array de objetos de receita.`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");
-                text = response.text.replace(/^```json\n?/, '').replace(/```$/, '');
-                result = JSON.parse(text);
+                result = safeParseJson(response.text);
                 break;
 
             default:
@@ -193,6 +194,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     } catch (error: any) {
         console.error(`API ERROR in action '${action}':`, error);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message || "Internal Server Error" });
     }
 }

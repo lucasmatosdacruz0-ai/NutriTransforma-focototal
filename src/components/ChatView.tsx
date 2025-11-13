@@ -54,7 +54,7 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
             
             table.setAttribute('data-responsive-processed', 'true');
         });
-    }, [messages]); // Rerun whenever messages change
+    }, [messages]);
 
     useEffect(() => {
       if (messages.length === 0) {
@@ -79,21 +79,34 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
         });
     };
 
-    const sendPromptAndStream = async (prompt: string, isButtonAction: boolean = false, featureKey?: string) => {
+    // FIX: Refactored to handle non-streaming response
+    const sendPrompt = async (prompt: string, isButtonAction: boolean = false, featureKey?: string) => {
         if (isLoading) return;
 
         const userMessageText = isButtonAction ? `*Ação solicitada: ${prompt.split('\n')[0]}*` : prompt;
         const userMessage: Message = { sender: 'user', text: userMessageText };
+        
+        // Use a temporary 'thinking' message while waiting for the full response
         const thinkingMessage: Message & {type: 'thinking'} = { sender: 'bot', text: 'NutriBot está pensando...', type: 'thinking' };
 
         setMessages(prev => [...prev, userMessage, thinkingMessage]);
-        if (!isButtonAction) setInput('');
+        if (!isButtonAction) {
+            setInput('');
+        }
         setIsLoading(true);
 
         try {
-            const response = await handlers.handleChatSendMessage(prompt, featureKey);
+            // FIX: Call the handler and await the full response object { text: string }
+            // Note: handlers.handleChatSendMessage is typed as returning AsyncGenerator for compatibility, 
+            // but the implementation in App.tsx returns Promise<{ text: string }>.
+            const response = await handlers.handleChatSendMessage(prompt, featureKey) as unknown as { text: string };
             const botResponse = response.text;
-            
+
+            if (!botResponse) {
+                 throw new Error("A IA retornou uma resposta vazia.");
+            }
+
+            // Update the last message (the thinking message) with the final response
             setMessages(prev => {
                 const newMessages = [...prev];
                 const lastMessage = newMessages[newMessages.length - 1];
@@ -104,17 +117,18 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
                 }
                 return newMessages;
             });
-            
+
             const botResponseLower = botResponse.toLowerCase();
             if ((botResponseLower.includes('plano alimentar') || botResponseLower.includes('dieta')) && botResponse.includes('|')) {
                 onNewMealPlanText(botResponse);
             }
+
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
             setMessages(prev => {
                 const newMessages = [...prev];
                 const lastMessage = newMessages[newMessages.length - 1];
-                if (lastMessage?.sender === 'bot') {
+                 if (lastMessage?.sender === 'bot') {
                     lastMessage.text = `Desculpe, ocorreu um erro. ${errorMessage}`;
                     delete (lastMessage as any).type;
                     lastMessage.isStreaming = false;
@@ -129,7 +143,7 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
-        sendPromptAndStream(input, false);
+        sendPrompt(input, false);
     };
     
     const renderBotMessage = (msg: ChatMessage) => {
@@ -137,7 +151,7 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
              return `<div class="flex items-center gap-2"><div class="dot-flashing"></div><span>${msg.text}</span></div>`;
         }
         const rawMarkup = marked.parse(msg.text, { gfm: true, breaks: true }) as string;
-        const streamingIndicator = msg.isStreaming ? '<span class="inline-block w-2 h-4 bg-slate-600 animate-pulse ml-2"></span>' : '';
+        const streamingIndicator = msg.isStreaming ? '<span class="inline-block w-2 h-4 bg-slate-600 animate-pulse ml-1"></span>' : '';
         return rawMarkup + streamingIndicator;
     };
 
@@ -145,15 +159,15 @@ const ChatView: React.FC<ChatViewProps> = ({ userData, messages, setMessages, on
         const { diets, restrictions } = userData.dietaryPreferences;
         const preferencesPrompt = `Minhas preferências: Dietas(${diets.join(', ')}), Restrições(${restrictions.join(', ')}).`;
         const prompt = `Crie uma dieta para um dia, com café, almoço, lanche e jantar. Meta: ${userData.macros.calories.goal} kcal. ${preferencesPrompt} Apresente em uma tabela.`;
-        sendPromptAndStream(prompt, true, 'dailyPlanGenerations');
+        sendPrompt(prompt, true, 'dailyPlanGenerations');
     };
 
     const handleGenerateShoppingList = () => {
-        sendPromptAndStream("Com base na dieta que você acabou de gerar, crie uma lista de compras detalhada.", true, 'shoppingLists');
+        sendPrompt("Com base na dieta que você acabou de gerar, crie uma lista de compras detalhada.", true, 'shoppingLists');
     };
 
     const handleAboutMe = () => {
-        sendPromptAndStream(`Faça um resumo motivacional e com dicas sobre minha evolução, com base nos meus dados atuais.`, true, 'progressAnalyses');
+        sendPrompt(`Faça um resumo motivacional e com dicas sobre minha evolução, com base nos meus dados atuais.`, true, 'progressAnalyses');
     };
 
     const canGenerateList = useMemo(() => {

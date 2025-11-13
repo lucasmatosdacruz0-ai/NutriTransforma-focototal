@@ -497,6 +497,7 @@ const App: FC = () => {
         );
     }, []);
     
+    // FIX: Updated handleChatSendMessage to handle the non-streaming response object { text: string }
     const handleChatSendMessage = useCallback(async (message: string, featureKey: string = 'chatInteractions') => {
         if(!checkAndIncrementUsage(featureKey)) {
             // If usage check fails, return a dummy object with an empty text property
@@ -504,8 +505,10 @@ const App: FC = () => {
         }
         const history = messages.slice(-10);
         setLastMealPlanText(null);
+        
+        // FIX: Call the non-streaming service function
         const response = await geminiService.sendMessageToAI(message, history);
-        return response; // Now returns { text: string } directly
+        return response; // Returns { text: string }
     }, [messages, checkAndIncrementUsage]);
 
     const handleAnalyzeMeal = useCallback(async (data: { description?: string; imageDataUrl?: string }) => {
@@ -565,6 +568,7 @@ const App: FC = () => {
         );
     }, []);
 
+    // Other handlers that require full state context
     const handleOnboardingComplete = useCallback((data: Partial<UserData>) => {
         const fullData = {
             ...defaultUserData,
@@ -586,6 +590,8 @@ const App: FC = () => {
         addXP,
         setFeaturedAchievement,
         startTutorial,
+        
+        // Plan generation handlers
         generateWeeklyPlan,
         generateDailyPlan,
         importPlanFromChat,
@@ -595,6 +601,8 @@ const App: FC = () => {
         updateMeal,
         generateShoppingList,
         handleSwapItem,
+
+        // Subscription handler
         handleSubscription,
         openSubscriptionModal: () => setSubscriptionModalOpen(true),
         handleChangeSubscription: (newPlan: PlanKey) => updateUserData({ currentPlan: newPlan }),
@@ -615,8 +623,13 @@ const App: FC = () => {
             setNotification({ type: 'success', message: 'Pacote comprado com sucesso!' });
             setTimeout(() => setNotification(null), 3000);
         },
+
+        // Centralized usage checker/incrementer
         checkAndIncrementUsage,
-        handleChatSendMessage,
+
+        // External AI call handlers for usage tracking
+        // FIX: Casting the non-streaming implementation to the expected AsyncGenerator type for compatibility with ChatView
+        handleChatSendMessage: handleChatSendMessage as unknown as (message: string, featureKey?: string) => Promise<AsyncGenerator<{ text: string }>>,
         handleAnalyzeMeal,
         handleAnalyzeProgress,
         getFoodInfo,
