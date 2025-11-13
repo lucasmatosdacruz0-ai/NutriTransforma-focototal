@@ -6,7 +6,7 @@ import { DailyPlan, Meal, UserData, MacroData, Recipe, FoodItem } from '../types
  */
 async function callAPI<T>(action: string, payload: object): Promise<T> {
   try {
-    // Use the unified /api endpoint
+    // Use o endpoint unificado /api
     const res = await fetch('/api', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -16,11 +16,11 @@ async function callAPI<T>(action: string, payload: object): Promise<T> {
     if (!res.ok) {
         let errorBody;
         try {
-            // Try to parse JSON error response
+            // Tenta analisar a resposta de erro JSON
             errorBody = await res.json();
         } catch {
-            // If parsing fails (e.g., 404 HTML), use status text
-            errorBody = { error: `API Error: ${res.status} ${res.statusText}. Check server logs.` };
+            // Se a análise falhar (ex: 404 HTML), usa o status text
+            errorBody = { error: `API Error: ${res.status} ${res.statusText}. Verifique os logs do servidor.` };
         }
         
         console.error(`API Error for ${action}:`, errorBody);
