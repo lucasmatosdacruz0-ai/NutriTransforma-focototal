@@ -247,7 +247,7 @@ const App: FC = () => {
         });
         
         // Check for new achievements unlocked
-        const newlyUnlocked = ALL_ACHIEVEMENTS.filter(ach => !userData.achievements.includes(ach.id));
+        const newlyUnlocked = ALL_ACHIEVEMENTS.filter(ach => !(userData.achievements || []).includes(ach.id));
         if (newlyUnlocked.length > 0) {
             // Re-evaluate achievements with new XP/level data
             // This is a simplified check; a more robust system would re-evaluate all achievements.
@@ -280,7 +280,7 @@ const App: FC = () => {
     const handleUpdateWeight = useCallback((newWeight: number) => {
         if (!userData) return;
         const today = new Date().toISOString();
-        const newHistory = [...userData.weightHistory, { date: today, weight: newWeight }];
+        const newHistory = [...(userData.weightHistory || []), { date: today, weight: newWeight }];
         updateUserData({ weight: newWeight, weightHistory: newHistory });
         addXP(25, 'weight_logged');
     }, [userData, updateUserData, addXP]);
@@ -306,10 +306,10 @@ const App: FC = () => {
     const handleMarkDayAsCompleted = useCallback(() => {
         if (!userData) return;
         const todayStr = new Date().toISOString().split('T')[0];
-        if (userData.completedDays.includes(todayStr)) return;
+        if ((userData.completedDays || []).includes(todayStr)) return;
         
         updateUserData({
-            completedDays: [...userData.completedDays, todayStr],
+            completedDays: [...(userData.completedDays || []), todayStr],
             streak: userData.streak + 1,
         });
         addXP(50, 'day_completed');
@@ -430,7 +430,7 @@ const App: FC = () => {
     
     const regenerateMeal = useCallback(async (date: string, mealId: string, prompt: string) => {
         if (!userData || !mealPlan?.[date]) return;
-        const mealToRegen = mealPlan[date].meals.find(m => m.id === mealId);
+        const mealToRegen = (mealPlan[date].meals || []).find(m => m.id === mealId);
         if (!mealToRegen) return;
 
         await processPlanGeneration(
@@ -440,7 +440,7 @@ const App: FC = () => {
                 const sanitizedNewMeal = sanitizeMeal(newMealData);
                 if (!sanitizedNewMeal) throw new Error("A IA retornou um formato de refeição inválido.");
 
-                const updatedMeals = mealPlan[date].meals.map(m => m.id === mealId ? { ...sanitizedNewMeal, id: mealId } : m);
+                const updatedMeals = (mealPlan[date].meals || []).map(m => m.id === mealId ? { ...sanitizedNewMeal, id: mealId } : m);
                 const updatedPlan = { ...mealPlan[date], meals: updatedMeals };
                 const sanitizedUpdatedPlan = sanitizeDailyPlan(updatedPlan);
                 if (sanitizedUpdatedPlan) {
@@ -452,16 +452,16 @@ const App: FC = () => {
 
     const handleSwapItem = useCallback(async (date: string, mealId: string, itemToSwap: FoodItem) => {
         if (!userData || !mealPlan?.[date]) return;
-        const mealContext = mealPlan[date].meals.find(m => m.id === mealId);
+        const mealContext = (mealPlan[date].meals || []).find(m => m.id === mealId);
         if (!mealContext) return;
         
         await processPlanGeneration(
             () => geminiService.getFoodSubstitution(itemToSwap, mealContext, userData),
             'itemSwaps',
             (newItem: FoodItem) => {
-                const updatedMeals = mealPlan[date].meals.map(m => {
+                const updatedMeals = (mealPlan[date].meals || []).map(m => {
                     if (m.id === mealId) {
-                        return { ...m, items: m.items.map(i => i.name === itemToSwap.name ? newItem : i) };
+                        return { ...m, items: (m.items || []).map(i => i.name === itemToSwap.name ? newItem : i) };
                     }
                     return m;
                 });
@@ -477,7 +477,7 @@ const App: FC = () => {
     const updateMeal = useCallback((date: string, updatedMeal: Meal) => {
         setMealPlan(prev => {
             if (!prev || !prev[date]) return prev;
-            const updatedMeals = prev[date].meals.map(m => m.id === updatedMeal.id ? updatedMeal : m);
+            const updatedMeals = (prev[date].meals || []).map(m => m.id === updatedMeal.id ? updatedMeal : m);
             const updatedPlan = { ...prev[date], meals: updatedMeals };
             const sanitized = sanitizeDailyPlan(updatedPlan);
             return sanitized ? { ...prev, [date]: sanitized } : prev;
@@ -505,9 +505,8 @@ const App: FC = () => {
         const history = messages.slice(-10);
         setLastMealPlanText(null);
         
-        // Call the non-streaming service function
-        const response = await geminiService.sendMessageToAI(message, history);
-        return response;
+        // FIX: Call the non-streaming service function and return the promise
+        return geminiService.sendMessageToAI(message, history);
     }, [messages, checkAndIncrementUsage]);
 
     const handleAnalyzeMeal = useCallback(async (data: { description?: string; imageDataUrl?: string }) => {
@@ -553,17 +552,17 @@ const App: FC = () => {
     // --- FAVORITES ---
     const handleToggleFavoritePlan = useCallback((plan: DailyPlan) => {
         setFavoritePlans(prev => 
-            prev.some(p => p.date === plan.date) 
-                ? prev.filter(p => p.date !== plan.date)
-                : [...prev, plan]
+            (prev || []).some(p => p.date === plan.date) 
+                ? (prev || []).filter(p => p.date !== plan.date)
+                : [...(prev || []), plan]
         );
     }, []);
 
     const handleToggleFavoriteRecipe = useCallback((recipe: Recipe) => {
         setFavoriteRecipes(prev => 
-            prev.some(r => r.id === recipe.id) 
-                ? prev.filter(r => r.id !== recipe.id)
-                : [...prev, recipe]
+            (prev || []).some(r => r.id === recipe.id) 
+                ? (prev || []).filter(r => r.id !== recipe.id)
+                : [...(prev || []), recipe]
         );
     }, []);
 

@@ -9,8 +9,8 @@ function buildUserProfile(userData: any): string {
 - **Nome:** ${userData.name}
 - **Idade:** ${userData.age}, **Gênero:** ${userData.gender}, **Altura:** ${userData.height} cm, **Peso Atual:** ${userData.weight} kg
 - **Nível de Atividade:** ${userData.activityLevel}, **Meta de Peso:** ${userData.weightGoal} kg
-- **Preferências:** ${userData.dietaryPreferences?.diets?.join(', ') || 'Nenhuma'}, **Restrições:** ${userData.dietaryPreferences?.restrictions?.join(', ') || 'Nenhuma'}
-- **Metas Macros:** Calorias: ${userData.macros.calories.goal} kcal, Proteínas: ${userData.macros.protein.goal} g, Carboidratos: ${userData.macros.carbs.goal} g, Gorduras: ${userData.macros.fat.goal} g
+- **Preferências:** ${(userData.dietaryPreferences?.diets || []).join(', ') || 'Nenhuma'}, **Restrições:** ${(userData.dietaryPreferences?.restrictions || []).join(', ') || 'Nenhuma'}
+- **Metas Macros:** Calorias: ${userData.macros?.calories?.goal} kcal, Proteínas: ${userData.macros?.protein?.goal} g, Carboidratos: ${userData.macros?.carbs?.goal} g, Gorduras: ${userData.macros?.fat?.goal} g
 ${adminPrompt}`;
 }
 
@@ -35,6 +35,7 @@ function deepSanitizeArrays(obj: any): any {
             const value = obj[key];
             
             if (arrayKeys.includes(key)) {
+                // Ensure arrays are arrays, even if null/undefined, and recursively sanitize contents
                 sanitized[key] = Array.isArray(value) ? value.map(deepSanitizeArrays) : [];
             } else if (typeof value === 'object' && value !== null) {
                 sanitized[key] = deepSanitizeArrays(value);
@@ -57,8 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: "Action is required" });
     }
 
-    // Check if API_KEY is defined
-    const apiKey = process.env.GEMINI_API_KEY; // Use GEMINI_API_KEY as defined in README
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         return res.status(500).json({ error: "API key not configured on server (GEMINI_API_KEY is missing)" });
     }
@@ -94,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         switch(action) {
             case 'sendMessageToAI':
                 const { message, history } = payload;
-                const contents: Content[] = history.map((h: any) => ({
+                const contents: Content[] = (history || []).map((h: any) => ({
                     role: h.sender === 'user' ? 'user' : 'model',
                     parts: [{ text: h.text }]
                 }));
@@ -119,7 +119,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 break;
 
             case 'generateDailyPlan':
-                // FIX: Ensure the prompt explicitly asks for the DailyPlan structure and uses the user profile
                 prompt = `Com base no perfil do usuário, gere um plano alimentar completo para a data ${payload.dateString}. O plano deve ser detalhado, alinhado com as metas. Calcule os totais de calorias e macros para cada refeição e para o dia todo. Responda APENAS com o JSON no formato DailyPlan. \n${buildUserProfile(payload.userData)}`;
                 response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: "application/json" } });
                 if (!response?.text) throw new Error("A IA retornou uma resposta vazia.");

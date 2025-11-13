@@ -5,44 +5,6 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NutriBot Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'brand-green': {
-                light: '#E6F8F0',
-                DEFAULT: '#00B894',
-                dark: '#00896B',
-              },
-              'brand-blue': {
-                light: '#EBF5FF',
-                DEFAULT: '#3498DB',
-                dark: '#2980B9',
-              },
-              'brand-orange': {
-                light: '#FFF4E6',
-                DEFAULT: '#F39C12',
-              },
-               'brand-yellow': {
-                light: '#FEF9E7',
-                DEFAULT: '#F1C40F',
-              }
-            }
-          }
-        },
-        // This allows us to target the theme class with variants
-        variants: {
-          extend: {},
-        },
-        plugins: [
-            function({ addVariant }) {
-                addVariant('theme-athlete', '.theme-athlete &');
-            }
-        ],
-      }
-    </script>
     <style>
       html, body {
         margin: 0;
