@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const MinimizeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
